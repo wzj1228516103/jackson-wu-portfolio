@@ -2,6 +2,7 @@
   const webglCanvas = document.querySelector("#bg");
   const canvas2d = document.querySelector("#bg-2d");
   const button = document.querySelector("#motion-toggle");
+  const drawAscii = window.createAxonAscii?.(document.querySelector("#gradient-ascii"));
   const compact = matchMedia("(max-width: 800px)");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -152,6 +153,7 @@
     }
 
     Object.assign(previous, pointer);
+    drawAscii?.(elapsed);
     frameId = requestAnimationFrame(animate);
   }
 
