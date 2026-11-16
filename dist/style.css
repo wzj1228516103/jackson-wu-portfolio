@@ -72,7 +72,7 @@ ul { margin: 0; padding-inline-start: 1.2em; }
   inset: 0 0 auto;
   width: 100%;
   height: min(54%, 480px);
-  background: radial-gradient(ellipse 44% 44% at 48% 44%, #41247880, transparent 92%);
+  background: radial-gradient(ellipse 50% 44% at 48% 44%, #41247880, transparent 92%);
 }
 
 .motion-surface::after, .particle-canvas {

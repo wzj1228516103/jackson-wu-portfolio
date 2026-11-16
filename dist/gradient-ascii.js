@@ -62,7 +62,7 @@
       colors.addColorStop(1, "#3b4587");
       context.fillStyle = colors;
 
-      const spread = Math.min(width * 0.44, 730);
+      const spread = Math.min(width * 0.50, 820);
       cells = [];
       for (let row = 0, y = cellHeight / 2; y < height; row++, y += cellHeight) {
         for (let column = 0, x = cellWidth / 2; x < width; column++, x += cellWidth) {
