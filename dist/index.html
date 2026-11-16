@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="吴子杰（Jackson Wu）的个人简历与项目集，涵盖后端开发、AI 应用工程和小程序开发工程技能套件。">
+  <meta name="robots" content="noindex, nofollow">
+  <title>吴子杰 · 后端开发与 AI 应用工程</title>
+  <link rel="icon" href="./mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="./site.js"></script>
+  <script defer src="./contributions.js"></script>
+  <script defer src="./three-0.150.1.min.js"></script>
+  <script defer src="./fluid.js"></script>
+  <script defer src="./particles.js"></script>
+  <script defer src="./motion.js"></script>
+</head>
+<body>
+  <div class="motion-surface" aria-hidden="true"><canvas id="bg"></canvas></div>
+  <a class="skip" href="#profile">跳到简历</a>
+
+  <header class="site-head">
+    <a class="brand" href="#profile" aria-label="Jackson Wu，返回简历首页">
+      <img class="brand-avatar" src="./avatar.webp" alt="" width="42" height="42">
+      <span>JACKSON WU<small>个人简历与项目</small></span>
+    </a>
+    <div class="head-actions">
+      <a class="print-link" href="./resume.html">A4 简历 <span aria-hidden="true">↗</span></a>
+      <span class="counter" id="project-count" aria-label="正在展示 12 个项目">12</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="work" id="work" aria-labelledby="work-title">
+      <h2 class="label" id="work-title">[ 项目 ]</h2>
+      <div class="filters" role="group" aria-label="筛选项目" hidden>
+        <button type="button" data-filter="all" aria-pressed="true">全部</button>
+        <button type="button" data-filter="ai" aria-pressed="false">AI 应用</button>
+        <button type="button" data-filter="backend" aria-pressed="false">后端架构</button>
+        <button type="button" data-filter="tools" aria-pressed="false">开源工具</button>
+        <button type="button" data-filter="knowledge" aria-pressed="false">知识工程</button>
+        <button type="button" data-filter="vision" aria-pressed="false">视觉推理</button>
+      </div>
+      <p id="filter-status" class="sr-only" role="status"></p>
+      <div class="project-scroll" role="region" aria-label="项目卡片" tabindex="0">
+        <a class="project-card" href="#miniprogram-skill" data-category="tools">
+          <div class="project-art art-skill" aria-hidden="true">
+            <img src="./mini-program-cover.webp" alt="">
+          </div>
+          <div class="project-meta"><strong>小程序开发工程技能套件</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">主要开发 · Agent Skills · 微信 / 支付宝 / 抖音</div>
+        </a>
+        <a class="project-card" href="#noshitjava" data-category="tools">
+          <div class="project-art art-repository art-repository-java" aria-hidden="true">
+            <img src="./noshitjava-cover.webp" alt="">
+          </div>
+          <div class="project-meta"><strong>NoShitJava-skill</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">Java · Spring · 开发规范 · 代码审查</div>
+        </a>
+        <a class="project-card" href="#noshitui" data-category="tools">
+          <div class="project-art art-repository art-repository-ui" aria-hidden="true">
+            <img src="./noshitui-cover.webp" alt="">
+          </div>
+          <div class="project-meta"><strong>NoShitUi-skill</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">UI 资源选型 · 可访问性 · 许可核对</div>
+        </a>
+        <a class="project-card" href="#voice-pet" data-category="ai">
+          <div class="project-art art-voice" aria-hidden="true">
+            <span class="art-note">OPUS / LIVE AUDIO</span>
+            <span class="art-word">Voice<span>Agent</span></span>
+            <span class="art-wave"></span>
+          </div>
+          <div class="project-meta"><strong>AI Agent 语音交互桌面宠物</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">Python · LangGraph · RAG · WebSocket</div>
+        </a>
+        <a class="project-card" href="#support" data-category="ai">
+          <div class="project-art art-travel" aria-hidden="true">
+            <span class="art-note">RAG / GEO</span>
+            <div class="map-path"><i></i><i></i><i></i></div><span class="art-word">beambox</span>
+          </div>
+          <div class="project-meta"><strong>beambox 电商智能客服</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">FastAPI · Spring Boot · RAG · RabbitMQ</div>
+        </a>
+        <a class="project-card" href="#beambox" data-category="backend">
+          <div class="project-art art-architecture" aria-hidden="true">
+            <span class="art-note">SPRING CLOUD · SHARDING</span>
+            <span class="art-word">beambox<span> APP</span></span>
+            <span class="art-lines"></span>
+          </div>
+          <div class="project-meta"><strong>beambox APP 社区与微服务升级</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">Nacos · ShardingSphere · Kubernetes</div>
+        </a>
+        <a class="project-card" href="#codegen" data-category="ai">
+          <div class="project-art art-code" aria-hidden="true">
+            <span class="diagram-in">PROMPT</span><span class="diagram-wire"></span><span class="diagram-out">&lt;/&gt;</span>
+            <span class="art-note">SSE STREAM</span>
+          </div>
+          <div class="project-meta"><strong>AI 应用开发与智能体编排平台</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">Spring AI · LangGraph4j · MCP · SSE</div>
+        </a>
+        <a class="project-card" href="#iot" data-category="ai backend">
+          <div class="project-art art-travel" aria-hidden="true">
+            <span class="art-note">MQTT / TELEMETRY</span>
+            <div class="map-path"><i></i><i></i><i></i></div><span class="art-word">IoT</span>
+          </div>
+          <div class="project-meta"><strong>IoT 设备智能管控 Agent 平台</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">LangGraph · MQTT · WebSocket · Redis</div>
+        </a>
+        <a class="project-card" href="#rag" data-category="ai knowledge">
+          <div class="project-art art-knowledge" aria-hidden="true">
+            <span class="art-note">BGE-M3 / CHROMA</span>
+            <span class="art-word">RAG<span> 知识库</span></span>
+            <span class="art-blocks"></span>
+          </div>
+          <div class="project-meta"><strong>分布式 RAG 智能知识库平台</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">BGE-M3 · Chroma · FastAPI · Spring Boot</div>
+        </a>
+        <a class="project-card" href="#knowledge-base" data-category="knowledge">
+          <div class="project-art art-code" aria-hidden="true">
+            <span class="art-note">KNOWLEDGE INDEX</span>
+            <span class="diagram-in">NOTES</span><span class="diagram-wire"></span><span class="diagram-out">↗</span>
+          </div>
+          <div class="project-meta"><strong>个人知识库建设</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">Obsidian · Python · Git · 目录和链接核验</div>
+        </a>
+        <a class="project-card" href="#you-gym" data-category="backend">
+          <div class="project-art art-voice" aria-hidden="true">
+            <span class="art-note">MOBILE / API / ADMIN</span>
+            <span class="art-word">YOU<span> GYM</span></span>
+            <span class="art-wave"></span>
+          </div>
+          <div class="project-meta"><strong>YOU GYM 健身应用原型</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">React Native · Expo · Spring Boot · Vue 3</div>
+        </a>
+        <a class="project-card" href="#vision" data-category="vision">
+          <div class="project-art art-vision" aria-hidden="true">
+            <span class="art-note">INDUSTRIAL VISION</span>
+            <span class="art-word">Edge<span> CV</span></span>
+            <span class="art-reticle"></span>
+          </div>
+          <div class="project-meta"><strong>工业缺陷智能检测与边缘推理</strong><span aria-hidden="true">→</span></div>
+          <div class="project-stack">工业视觉 · 边缘推理 · 授权发明专利</div>
+        </a>
+      </div>
+    </section>
+
+    <div class="profile-panel">
+      <nav class="profile-nav" aria-label="简历分区">
+        <a href="#profile">简介</a><a href="#experience">工作</a><a href="#skills">技能</a><a href="#education">教育</a><a href="#contributions">贡献</a>
+      </nav>
+      <div class="profile-scroll" role="region" aria-label="简历正文" tabindex="0">
+        <section class="intro" id="profile" tabindex="-1" aria-labelledby="name">
+          <div class="intro-heading">
+            <div>
+              <p class="label">[ 个人简介 ]</p>
+              <h1 id="name">吴子杰<span aria-hidden="true">.</span></h1>
+            </div>
+            <img class="profile-portrait" src="./portrait.webp" alt="吴子杰的正式肖像" width="640" height="640">
+          </div>
+          <p class="role">后端开发 · AI 应用工程</p>
+          <p class="lead">使用 Java 和 Python 开发智能硬件与 AI 应用，做过语音 Agent、海外社区和电商客服。主要开发小程序开发工程技能套件。</p>
+          <div class="intro-actions">
+            <a href="https://github.com/wzj1228516103">GitHub <span aria-hidden="true">↗</span></a>
+            <a href="#miniprogram-skill">查看开源 Skill <span aria-hidden="true">↓</span></a>
+          </div>
+        </section>
+
+        <section class="detail-section" id="experience" tabindex="-1" aria-labelledby="experience-title">
+          <h2 class="label" id="experience-title">[ 工作经历 ]</h2>
+          <article class="resume-entry">
+            <p class="date"><time datetime="2025-09">2025.09</time> — 至今</p>
+            <h3>深圳光胜人工智能科技</h3>
+            <p class="entry-role">Java 开发工程师</p>
+            <ul>
+              <li>负责智能硬件社区与 AI 产品后端开发，覆盖语音交互桌面宠物、beambox 海外独立站客服和全球社区。</li>
+              <li>负责 popjoy 用户、设备、数据服务拆分，使用 Nacos、Sentinel 管理配置和流量，设计多租户数据隔离与 RBAC 授权。</li>
+            </ul>
+          </article>
+          <article class="resume-entry">
+            <p class="date"><time datetime="2025-05">2025.05</time> — <time datetime="2025-09">2025.09</time></p>
+            <h3>中国铁塔股份有限公司</h3>
+            <p class="entry-role">Java 开发工程师 · 数字孪生智慧大屏</p>
+            <ul>
+              <li>实现 OAuth 2.0 / JWT 认证，接入高德地图完成车辆与设备定位、轨迹绘制，结合扫码和 BOM 导入导出支持生产追溯。</li>
+              <li>通过索引调整、关键写入异步化和缓存预热减轻数据库压力。</li>
+            </ul>
+          </article>
+        </section>
+
+        <section class="detail-section" id="skills" tabindex="-1" aria-labelledby="skills-title">
+          <h2 class="label" id="skills-title">[ 技术能力 ]</h2>
+          <dl class="skills">
+            <div><dt>后端与数据</dt><dd>Java、Spring Boot、FastAPI、MyBatis-Plus、MySQL、Redis、RabbitMQ</dd></div>
+            <div><dt>AI 应用</dt><dd>Python、LangChain、LangGraph、Spring AI、RAG、Embedding、工具调用与多模型路由</dd></div>
+            <div><dt>云原生与交付</dt><dd>Kubernetes、Docker、Rancher、Harbor、Jenkins、GitLab CI/CD、Nacos</dd></div>
+            <div><dt>视觉与边缘推理</dt><dd>工业缺陷检测、目标识别与分类、深度学习芯片</dd></div>
+          </dl>
+        </section>
+
+        <section class="detail-section" id="education" tabindex="-1" aria-labelledby="education-title">
+          <h2 class="label" id="education-title">[ 教育经历 ]</h2>
+          <article class="resume-entry">
+            <p class="date"><time datetime="2022-09">2022.09</time> — <time datetime="2026-06">2026.06</time></p>
+            <h3>五邑大学</h3>
+            <p class="entry-role">通信工程 · 本科</p>
+            <p>校级奖学金（专业前 5%） · CET-4</p>
+          </article>
+        </section>
+
+        <section class="detail-section contribution-section" id="contributions" tabindex="-1" aria-labelledby="contributions-title">
+          <div class="contribution-heading">
+            <h2 class="label" id="contributions-title">[ GitHub 贡献 ]</h2>
+            <a href="https://github.com/wzj1228516103#contributions-graph">GitHub 主页 ↗</a>
+          </div>
+          <p class="contribution-state" id="contribution-state" role="status"></p>
+          <button class="contribution-retry" id="contribution-retry" type="button" hidden>重新读取</button>
+          <noscript><p class="contribution-state">启用 JavaScript 后可查看贡献日历。</p></noscript>
+          <div id="contribution-results" hidden>
+            <p class="contribution-count"><strong id="contribution-total"></strong> 次贡献 <span>· 过去一年</span></p>
+            <div class="contribution-card">
+              <div class="contribution-scroll">
+                <div class="contribution-grid" id="contribution-grid" role="group" aria-label="过去一年 GitHub 贡献日历，可使用方向键浏览"></div>
+              </div>
+              <div class="contribution-key" aria-label="贡献量由少到多">
+                <span>少</span><i data-level="0"></i><i data-level="1"></i><i data-level="2"></i><i data-level="3"></i><i data-level="4"></i><span>多</span>
+              </div>
+            </div>
+            <p class="contribution-day-label" id="contribution-day"></p>
+            <p class="contribution-source" id="contribution-source"></p>
+          </div>
+        </section>
+
+        <section class="detail-section project-detail" id="miniprogram-skill" tabindex="-1" aria-labelledby="miniprogram-title">
+          <p class="label">[ 开源工具 · 主要开发 ]</p>
+          <h2 id="miniprogram-title">小程序开发工程技能套件</h2>
+          <p>为微信、支付宝和抖音小程序开发提供一套 Agent 工程流程，覆盖项目摸排、需求规格、架构设计、实现、调试、验证和上线准备。</p>
+          <ul>
+            <li>把平台规则核对放进提审、发布和隐私申报等流程，并按平台区分自动检查和人工核对。</li>
+            <li>将项目结构、任务路由、Agent 行为和产物质量分层评测，结合证据判断是否达到验收标准。</li>
+          </ul>
+          <div class="intro-actions">
+            <a href="https://github.com/NocodeMrLi/mini-program-engineering-skill-suite">查看 GitHub 仓库 ↗</a>
+            <a href="https://github.com/NocodeMrLi/mini-program-engineering-skill-suite#32-秒看懂这套技能">项目介绍视频 ↗</a>
+          </div>
+        </section>
+
+        <section class="detail-section project-detail" id="noshitjava" tabindex="-1" aria-labelledby="noshitjava-title">
+          <p class="label">[ 开源工具 · Java 工程 ]</p>
+          <h2 id="noshitjava-title">NoShitJava-skill</h2>
+          <p>为 AI 辅助 Java 开发提供按任务查阅的工程规则。开发、设计、审查、测试、修复、重构和查规范分别有入口。</p>
+          <p>规则覆盖接口边界、数据库事务、失败路径和测试核验，仓库提供代码示例。</p>
+          <div class="intro-actions">
+            <a href="https://github.com/wzj1228516103/NoShitJava-skill">查看 NoShitJava 仓库 ↗</a>
+            <a href="./noshitjava-cover.webp" target="_blank" rel="noopener">查看项目介绍大图 ↗</a>
+          </div>
+        </section>
+
+        <section class="detail-section project-detail" id="noshitui" tabindex="-1" aria-labelledby="noshitui-title">
+          <p class="label">[ 开源工具 · UI 工程 ]</p>
+          <h2 id="noshitui-title">NoShitUi-skill</h2>
+          <p>帮助 Agent 根据界面需求发现、比较并集成开源组件、模板和图标。选型时核对技术栈、可访问性、许可证和维护状态。</p>
+          <p>将资源选型、界面集成和交互核验连成一套工作流程，另有独立交互展示站。</p>
+          <div class="intro-actions">
+            <a href="https://github.com/wzj1228516103/NoShitUi-skill">查看 NoShitUi 仓库 ↗</a>
+            <a href="https://wzj1228516103.github.io/NoShitUi-skill/">打开交互展示站 ↗</a>
+            <a href="./noshitui-cover.webp" target="_blank" rel="noopener">查看项目介绍大图 ↗</a>
+          </div>
+        </section>
+
+        <section class="detail-section project-detail" id="voice-pet" tabindex="-1" aria-labelledby="voice-title">
+          <p class="label">[ 公司项目 · AI 应用 ]</p>
+          <h2 id="voice-title">AI Agent 语音交互桌面宠物</h2>
+          <p>面向消费级智能硬件，串联本地语音唤醒、云端智能对话和设备控制。</p>
+          <ul>
+            <li>用 LangGraph 编排意图识别、Chroma 知识检索、工具调用与回复生成，通过 Redis 管理多轮状态和请求幂等。</li>
+            <li>通过 Opus 和 WebSocket 接入流式语音，设计设备鉴权、心跳、状态上报与 OTA 链路，封装语音控制设备所需的工具。</li>
+          </ul>
+        </section>
+
+        <section class="detail-section project-detail" id="support" tabindex="-1" aria-labelledby="support-title">
+          <p class="label">[ 公司项目 · AI 应用 ]</p>
+          <h2 id="support-title">beambox 电商智能客服</h2>
+          <p>在 Spring Boot 业务后端和 FastAPI AI 服务上提供海外电商问答、查单与售后分流。</p>
+          <ul>
+            <li>构建商品、物流和售后知识库，使用 RAG 回答咨询，借助工具查询订单，复杂问题生成工单转人工处理。</li>
+            <li>按访问 IP 匹配语言、币种和物流政策，用 RabbitMQ 衔接业务后端与 AI 服务。</li>
+          </ul>
+        </section>
+
+        <section class="detail-section project-detail" id="beambox" tabindex="-1" aria-labelledby="beambox-title">
+          <p class="label">[ 公司项目 · 后端架构 ]</p>
+          <h2 id="beambox-title">beambox APP 社区与微服务升级</h2>
+          <p>为海外智能硬件用户提供宠物设备管理、内容互动和审核。负责设计和维护 300+ 个社区业务接口，并用 Apifox 管理接口文档与测试。</p>
+          <ul>
+            <li>按用户、宠物、社区、支付等业务域拆分服务，以用户 ID 为核心表分片键，用 ShardingSphere 落地分库分表。</li>
+            <li>用 RabbitMQ 解耦跨服务流程，并在 Kubernetes 环境通过 Rancher、Harbor 和 CI/CD 配合发布。</li>
+          </ul>
+        </section>
+
+        <section class="detail-section project-detail" id="codegen" tabindex="-1" aria-labelledby="codegen-title">
+          <p class="label">[ 个人项目 · 后端开发 ]</p>
+          <h2 id="codegen-title">AI 应用开发与智能体编排平台</h2>
+          <p class="date"><time datetime="2025-05">2025.05</time> — <time datetime="2026-03">2026.03</time></p>
+          <p>用 Spring AI、LangChain4j 和 LangGraph4j 整合模型调用、RAG、MCP 工具、会话记忆与 Agent 工作流。</p>
+          <ul>
+            <li>将需求分析、代码生成、文件操作、质量检查和构建拆成可编排节点，用 SSE 实时返回进度。</li>
+            <li>为文件工具加入路径校验、操作白名单和备份。基于平台能力实现五邑旅游助手，支持地点查询与行程规划。</li>
+          </ul>
+          <a class="detail-link" href="https://github.com/wzj1228516103/wzj-ai-code-mother">查看网页生成子项目 ↗</a>
+        </section>
+
+        <section class="detail-section project-detail" id="iot" tabindex="-1" aria-labelledby="iot-title">
+          <p class="label">[ 个人项目 · 项目负责人 / 后端开发 ]</p>
+          <h2 id="iot-title">IoT 设备智能管控 Agent 平台</h2>
+          <p class="date"><time datetime="2025-09">2025.09</time> — <time datetime="2026-06">2026.06</time></p>
+          <p>将语音和文字指令映射到设备动作，支持联动、实时状态监控和告警。</p>
+          <ul>
+            <li>用 LangGraph 编排指令解析、设备校验、动作执行和结果反馈，通过 MQTT 网关下发控制指令。</li>
+            <li>用 WebSocket 推送状态，结合唯一指令 ID、Redis 去重和 MQTT QoS 处理重复投递与重试。</li>
+          </ul>
+        </section>
+
+        <section class="detail-section project-detail" id="rag" tabindex="-1" aria-labelledby="rag-title">
+          <p class="label">[ 个人项目 · 项目负责人 / 全栈开发 ]</p>
+          <h2 id="rag-title">分布式 RAG 智能知识库平台</h2>
+          <p class="date"><time datetime="2025-06">2025.06</time> — <time datetime="2025-09">2025.09</time></p>
+          <p>面向个人与小团队提供多格式文档导入、语义检索和带引用的多轮问答。</p>
+          <ul>
+            <li>处理文档解析、切片与 BGE-M3 向量化，使用 Chroma 检索，通过 LangGraph 串联意图识别、答案生成和引用溯源。</li>
+            <li>以 FastAPI 提供流式推理，Spring Boot 管理用户权限与知识库，使用 Redis 缓存会话并通过 Docker 部署。</li>
+          </ul>
+        </section>
+
+        <section class="detail-section project-detail" id="knowledge-base" tabindex="-1" aria-labelledby="knowledge-base-title">
+          <p class="label">[ 个人项目 · 知识工程 ]</p>
+          <h2 id="knowledge-base-title">个人知识库建设</h2>
+          <p>用 Obsidian 组织项目、学习和工作资料，给笔记保留来源、适用范围和续接入口。</p>
+          <p>编写 Python 工具生成目录、检查内部链接和资料引用，再用 Git 记录与同步经过核验的更新。</p>
+        </section>
+
+        <section class="detail-section project-detail" id="you-gym" tabindex="-1" aria-labelledby="you-gym-title">
+          <p class="label">[ 个人项目 · 应用原型 ]</p>
+          <h2 id="you-gym-title">YOU GYM 健身应用原型</h2>
+          <p>围绕人体探索、训练计划、饮食管理和个人中心规划首版功能。</p>
+          <p>工程分为 React Native / Expo 移动端、Spring Boot API 和 Vue 3 管理端，分别承载用户交互、后端服务和运营配置。</p>
+        </section>
+
+        <section class="detail-section project-detail" id="vision" tabindex="-1" aria-labelledby="vision-title">
+          <p class="label">[ 工业视觉 · 共同发明人 ]</p>
+          <h2 id="vision-title">工业缺陷智能检测与边缘推理</h2>
+          <p>参与设计基于深度学习芯片的工业质检方案，覆盖图像输入、特征处理、缺陷识别与结果输出。</p>
+          <p>共同发明专利《基于深度学习芯片的工业缺陷检测方法、设备及介质》于 2026.01 授权公告。</p>
+          <a class="detail-link" href="https://patents.google.com/patent/CN119559119B/zh">查看授权公告 CN119559119B ↗</a>
+        </section>
+        <footer class="panel-footer"><a href="#profile">↑ 返回简介</a><a class="back-projects" href="#work">↑ 返回项目</a></footer>
+      </div>
+    </div>
+  </main>
+
+  <button class="motion-toggle" id="motion-toggle" type="button" hidden>暂停动效</button>
+</body>
+</html>

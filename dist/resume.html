@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="吴子杰的个人简历，涵盖后端开发、AI 应用工程和小程序开发工程技能套件。">
+  <meta name="robots" content="noindex, nofollow">
+  <title>吴子杰 · 个人简历</title>
+  <link rel="icon" href="./mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./resume-print.css">
+  <script defer src="./resume-print.js"></script>
+</head>
+<body>
+  <nav class="toolbar" aria-label="简历操作">
+    <a href="./">← 返回个人主页</a>
+    <button type="button" id="print-resume" hidden>打印 / 保存为 PDF</button>
+  </nav>
+
+  <main class="sheet">
+    <header class="identity">
+      <div class="identity-copy">
+        <h1>吴子杰 <span lang="en">Jackson Wu</span></h1>
+        <p class="role">后端开发 · AI 应用工程</p>
+      </div>
+      <address><a href="https://github.com/wzj1228516103">github.com/wzj1228516103</a></address>
+      <img class="identity-portrait" src="./portrait.webp" alt="吴子杰的正式肖像" width="640" height="640">
+    </header>
+
+    <p class="summary">使用 Java / Spring Boot 和 Python / FastAPI 开发智能硬件平台与 AI 应用，涉及语音 Agent、RAG 检索、设备控制和微服务交付。</p>
+
+    <section aria-labelledby="opensource-heading">
+      <h2 id="opensource-heading">重点开源项目</h2>
+      <article class="entry">
+        <div class="entry-head">
+          <h3>小程序开发工程技能套件</h3>
+          <p class="date">主要开发</p>
+        </div>
+        <p>面向微信、支付宝和抖音小程序的 Agent 技能套件，覆盖需求澄清、架构设计、实现、界面与设备适配、分层验证及发布准备。</p>
+        <p class="entry-link"><a href="https://github.com/NocodeMrLi/mini-program-engineering-skill-suite">github.com/NocodeMrLi/mini-program-engineering-skill-suite</a></p>
+        <p class="entry-link related-projects">
+          <span>其他开源项目</span>
+          <a href="https://github.com/wzj1228516103/NoShitJava-skill">NoShitJava-skill</a>
+          <a href="https://github.com/wzj1228516103/NoShitUi-skill">NoShitUi-skill</a>
+        </p>
+      </article>
+    </section>
+
+    <section aria-labelledby="experience-heading">
+      <h2 id="experience-heading">工作经历</h2>
+      <article class="entry">
+        <div class="entry-head">
+          <h3>深圳光胜人工智能科技</h3>
+          <p class="date"><time datetime="2025-09">2025.09</time> - 至今</p>
+        </div>
+        <p class="context">Java 开发工程师</p>
+        <ul>
+          <li><strong>语音交互桌面宠物：</strong>用 LangGraph 编排语音处理、RAG 检索和工具调用，结合 WebSocket 与 Opus 传输流式音频。</li>
+          <li><strong>beambox.site 智能客服：</strong>以 Spring Boot 和 FastAPI 连接订单查询、Chroma 检索与多语言客服，复杂咨询流转人工工单。</li>
+          <li><strong>beambox APP：</strong>设计与维护 300+ 社区业务接口，按用户 ID 拆分核心表。微服务升级采用 ShardingSphere、RabbitMQ 和 Kubernetes。</li>
+          <li>用 Nacos 与 Sentinel 治理 popjoy APP 微服务。为多租户后台实现 RBAC、租户拦截与动态数据源。</li>
+        </ul>
+      </article>
+      <article class="entry">
+        <div class="entry-head">
+          <h3>中国铁塔股份有限公司</h3>
+          <p class="date"><time datetime="2025-05">2025.05</time> - <time datetime="2025-09">2025.09</time></p>
+        </div>
+        <p class="context">Java 开发工程师 · 数字孪生智慧大屏</p>
+        <ul>
+          <li>构建 OAuth 2.0 / JWT 统一认证，集成设备定位与轨迹、OCR、扫码及 BOM 导入导出，支持生产数据追溯。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section aria-labelledby="projects-heading">
+      <h2 id="projects-heading">个人项目与专利</h2>
+      <article class="entry">
+        <div class="entry-head">
+          <h3>AI 应用开发与智能体编排平台</h3>
+          <p class="date"><time datetime="2025-05">2025.05</time> - <time datetime="2026-03">2026.03</time></p>
+        </div>
+        <p>负责后端与 Agent 编排，串联需求分析、代码生成、质量检查和构建，集成 RAG、MCP、会话记忆与 SSE 流式输出。</p>
+      </article>
+      <article class="entry">
+        <div class="entry-head">
+          <h3>IoT 设备智能管控 Agent 平台</h3>
+          <p class="date"><time datetime="2025-09">2025.09</time> - <time datetime="2026-06">2026.06</time></p>
+        </div>
+        <p>负责项目与后端开发，将自然语言指令映射为 MQTT 设备动作，用唯一指令 ID 与 Redis 处理去重和重试。</p>
+      </article>
+      <article class="entry">
+        <div class="entry-head">
+          <h3>分布式 RAG 智能知识库平台</h3>
+          <p class="date"><time datetime="2025-06">2025.06</time> - <time datetime="2025-09">2025.09</time></p>
+        </div>
+        <p>负责项目与全栈开发，搭建文档解析、切片、向量检索及引用溯源链路，使用 FastAPI 与 Spring Boot 提供服务。</p>
+      </article>
+      <article class="entry">
+        <h3>工业缺陷智能检测与边缘推理</h3>
+        <p>参与设计深度学习芯片上的缺陷识别与分类方案，为共同发明人。<a href="https://patents.google.com/patent/CN119559119B/zh">授权公告 CN119559119B</a></p>
+      </article>
+    </section>
+
+    <section aria-labelledby="skills-heading">
+      <h2 id="skills-heading">技术能力</h2>
+      <dl class="skills">
+        <dt>后端与数据</dt><dd>Java、Spring Boot、FastAPI、MyBatis-Plus、MySQL、Redis、RabbitMQ</dd>
+        <dt>AI 应用</dt><dd>Python、LangChain、LangGraph、Spring AI、LangChain4j、RAG、MCP</dd>
+        <dt>云原生交付</dt><dd>Docker、Kubernetes、Rancher、Harbor、Jenkins、GitLab CI/CD、Nacos</dd>
+      </dl>
+    </section>
+
+    <section aria-labelledby="education-heading">
+      <h2 id="education-heading">教育背景</h2>
+      <div class="entry-head">
+        <h3>五邑大学 · 通信工程本科</h3>
+        <p class="date"><time datetime="2022-09">2022.09</time> - <time datetime="2026-06">2026.06</time></p>
+      </div>
+      <p class="context">校级奖学金（专业前 5%） · CET-4</p>
+    </section>
+  </main>
+</body>
+</html>
