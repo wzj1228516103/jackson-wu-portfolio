@@ -1,121 +1,182 @@
 (() => {
-  const canvas = document.querySelector("#bg");
+  const webglCanvas = document.querySelector("#bg");
+  const canvas2d = document.querySelector("#bg-2d");
   const button = document.querySelector("#motion-toggle");
-  if (!window.THREE || !window.AxonFluid || !window.AxonParticles) return;
-
-  const options = {alpha: false, antialias: false, powerPreference: "high-performance"};
-  const context = canvas.getContext("webgl2", options);
-  if (!context || !context.getExtension("EXT_color_buffer_float")) return;
-
   const compact = matchMedia("(max-width: 800px)");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 1000);
-  const base = new THREE.Vector3(-1.17, 0, 6);
-  const target = base.clone();
-  camera.position.copy(base);
 
-  const pointer = {x: 0, y: 0, active: false};
-  const previous = {x: 0, y: 0, active: false};
-  let renderer, particles, fluid, mobile, frameId, lastFrame;
-  let lastSplat = -Infinity;
-  let elapsed = 0;
-  let width = 1, height = 1;
-  let paused = reduced.matches;
-  let visible = true;
-  let contextLost = false;
-  let dirty = true;
+  function createWebGL(canvas) {
+    if (!window.THREE || !window.AxonFluid || !window.AxonParticles) return null;
+    const options = {alpha: false, antialias: false, powerPreference: "high-performance"};
+    const context = canvas.getContext("webgl2", options);
+    if (!context?.getExtension("EXT_color_buffer_float")) return null;
 
-  function sizeScene() {
-    width = Math.max(canvas.clientWidth, 1);
-    height = Math.max(canvas.clientHeight, 1);
-    const dpr = Math.min(devicePixelRatio || 1, 2);
-    renderer.setPixelRatio(dpr);
-    renderer.setSize(width, height, false);
+    const renderer = new THREE.WebGLRenderer({canvas, context, ...options});
+    renderer.setClearColor(0x000000, 1);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 1000);
+    const base = new THREE.Vector3(-1.17, 0, 6);
+    const target = base.clone();
+    camera.position.copy(base);
 
-    camera.aspect = width / height;
-    camera.zoom = compact.matches ? Math.min(0.9, camera.aspect * 1.08) : 0.88;
-    camera.updateProjectionMatrix();
+    let particles, fluid, mobile, width, height;
+    let lastSplat = -Infinity;
 
-    if (fluid) fluid.resize(width, height, dpr);
-    else fluid = new AxonFluid(renderer, width, height, dpr);
+    function resize(size) {
+      ({width, height} = size);
+      const {dpr} = size;
+      renderer.setPixelRatio(dpr);
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.zoom = size.mobile ? Math.min(0.9, camera.aspect * 1.08) : 0.88;
+      camera.updateProjectionMatrix();
 
-    if (!particles || mobile !== compact.matches) {
-      particles?.dispose();
-      mobile = compact.matches;
-      particles = new AxonParticles(renderer, mobile);
-      scene.add(particles.group);
+      if (fluid) fluid.resize(width, height, dpr);
+      else fluid = new AxonFluid(renderer, width, height, dpr);
+      if (!particles || mobile !== size.mobile) {
+        particles?.dispose();
+        mobile = size.mobile;
+        particles = new AxonParticles(renderer, mobile);
+        scene.add(particles.group);
+      }
+      particles.resize(dpr);
+      target.copy(base);
     }
-    particles.resize(dpr);
-    pointer.active = previous.active = false;
-    target.copy(base);
-    dirty = false;
+
+    function draw(now, elapsed, delta, pointer, brush) {
+      if (pointer.active) {
+        target.x = base.x - (pointer.x / width * 2 - 1) * 0.8;
+        target.y = base.y + (pointer.y / height * 2 - 1) * 1.5;
+      }
+      if (brush) {
+        const {dx, dy, distance, radius, stroke} = brush;
+        const power = Math.min(distance / 15, 1) * 3.8 * stroke;
+        const x = pointer.x / width;
+        const y = 1 - pointer.y / height;
+        const trail = now - lastSplat <= 50 ? stroke : 0;
+        fluid.splat(x - dx * trail / width, y + dy * trail / height,
+          x, y, dx * power, -dy * power, radius / height);
+        lastSplat = now;
+      }
+
+      camera.position.lerp(target, 0.05);
+      camera.lookAt(0, 0, 0);
+      fluid.step();
+      particles.step(elapsed, delta * 60, camera, fluid.velocity, fluid.density);
+      renderer.render(scene, camera);
+      return true;
+    }
+
+    function dispose() {
+      particles?.dispose();
+      fluid?.dispose();
+      renderer.dispose();
+    }
+
+    return { canvas, resize, draw, dispose };
   }
 
+  const pointer = {x: 0, y: 0, active: false};
+  const previous = {...pointer};
+  let engine, size, frameId, lastFrame;
+  let elapsed = 0;
+  let paused = reduced.matches;
+  let visible = true;
+  let dirty = true;
+  let tryWebGL = true;
+  let unavailable = false;
+
   function track(point, restart) {
-    if (!frameId) return;
-    const rect = canvas.getBoundingClientRect();
+    if (frameId === undefined || !size) return;
+    const rect = webglCanvas.getBoundingClientRect();
     pointer.x = point.clientX - rect.left;
     pointer.y = point.clientY - rect.top;
-    pointer.active = pointer.x >= 0 && pointer.y >= 0 && pointer.x <= width && pointer.y <= height;
+    pointer.active = pointer.x >= 0 && pointer.y >= 0 && pointer.x <= size.width && pointer.y <= size.height;
     if (restart || !pointer.active) previous.active = false;
   }
 
-  function stir(now) {
+  function getBrush() {
+    if (!pointer.active || !previous.active) return null;
     const dx = pointer.x - previous.x;
     const dy = pointer.y - previous.y;
     const distance = Math.hypot(dx, dy);
+    if (distance <= 0.01) return null;
+    const maxRadius = Math.min(size.mobile ? 42 : 54, size.height * (size.mobile ? 0.08 : 0.06));
+    return { dx, dy, distance, radius: Math.min(distance / 5, 1) * maxRadius, stroke: Math.min(1, 32 / distance) };
+  }
 
-    if (previous.active && distance > 0.01) {
-      const maxRadius = Math.min(mobile ? 42 : 54, height * (mobile ? 0.08 : 0.06));
-      const radius = Math.min(distance / 5, 1) * maxRadius / height;
-      const stroke = Math.min(1, 32 / distance);
-      const power = Math.min(distance / 15, 1) * 3.8 * stroke;
-      const x = pointer.x / width;
-      const y = 1 - pointer.y / height;
-      const trail = now - lastSplat <= 50 ? stroke : 0;
-      fluid.splat(x - dx * trail / width, y + dy * trail / height,
-        x, y, dx * power, -dy * power, radius);
-      lastSplat = now;
-    }
+  function stopFrame() {
+    cancelAnimationFrame(frameId);
+    frameId = lastFrame = undefined;
+    pointer.active = previous.active = false;
+  }
 
-    Object.assign(previous, pointer);
+  function fallBack() {
+    tryWebGL = false;
+    stopFrame();
+    const previousEngine = engine;
+    engine = undefined;
+    previousEngine.canvas.classList.remove("is-rendering");
+    try { previousEngine.dispose(); } catch { /* The WebGL context may already be gone. */ }
+    dirty = true;
+    syncMotion();
   }
 
   function animate(now) {
-    if (dirty) sizeScene();
     const delta = lastFrame === undefined ? 1 / 60 : Math.min((now - lastFrame) / 1000, 0.05);
     lastFrame = now;
     elapsed += delta;
 
-    if (pointer.active) {
-      target.x = base.x - (pointer.x / width * 2 - 1) * 0.8;
-      target.y = base.y + (pointer.y / height * 2 - 1) * 1.5;
-      stir(now);
+    try {
+      if (dirty) {
+        size = {
+          width: Math.max(webglCanvas.clientWidth, 1),
+          height: Math.max(webglCanvas.clientHeight, 1),
+          dpr: Math.min(devicePixelRatio || 1, 2),
+          mobile: compact.matches
+        };
+        engine.resize(size);
+        pointer.active = previous.active = false;
+        dirty = false;
+      }
+      if (engine.draw(now, elapsed, delta, pointer, getBrush())) engine.canvas.classList.add("is-rendering");
+    } catch {
+      if (engine.canvas === webglCanvas) fallBack();
+      else {
+        engine.canvas.classList.remove("is-rendering");
+        stopFrame();
+        unavailable = true;
+        button.hidden = true;
+      }
+      return;
     }
 
-    camera.position.lerp(target, 0.05);
-    camera.lookAt(0, 0, 0);
-    fluid.step();
-    particles.step(elapsed, delta * 60, camera, fluid.velocity, fluid.density);
-    renderer.render(scene, camera);
-    canvas.classList.add("is-rendering");
+    Object.assign(previous, pointer);
     frameId = requestAnimationFrame(animate);
   }
 
   function syncMotion() {
+    if (unavailable) return;
     button.textContent = paused ? "启用动效" : "暂停动效";
-
-    if (paused || !visible || document.hidden || contextLost) {
-      cancelAnimationFrame(frameId);
-      frameId = lastFrame = undefined;
-      pointer.active = previous.active = false;
+    if (paused || !visible || document.hidden) {
+      stopFrame();
       return;
     }
 
-    if (!renderer) {
-      renderer = new THREE.WebGLRenderer({canvas, context, ...options});
-      renderer.setClearColor(0x000000, 1);
+    if (!engine) {
+      try {
+        if (tryWebGL) engine = createWebGL(webglCanvas);
+      } catch {
+        tryWebGL = false;
+      }
+      if (!engine) {
+        try { engine = window.createAxonCanvasMotion?.(canvas2d); } catch { /* Static poster remains visible. */ }
+      }
+      if (!engine) {
+        unavailable = true;
+        button.hidden = true;
+        return;
+      }
     }
     if (frameId === undefined) frameId = requestAnimationFrame(animate);
   }
@@ -139,25 +200,16 @@
   addEventListener("touchstart", touch, {passive: true});
   addEventListener("touchmove", touch, {passive: true});
   document.addEventListener("visibilitychange", syncMotion);
-  canvas.addEventListener("webglcontextlost", event => {
+  webglCanvas.addEventListener("webglcontextlost", event => {
+    if (engine?.canvas !== webglCanvas) return;
     event.preventDefault();
-    contextLost = true;
-    canvas.classList.remove("is-rendering");
-    syncMotion();
-  });
-  canvas.addEventListener("webglcontextrestored", () => {
-    particles?.dispose();
-    fluid?.dispose();
-    particles = fluid = undefined;
-    dirty = true;
-    contextLost = false;
-    syncMotion();
+    fallBack();
   });
 
   new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
     syncMotion();
-  }).observe(canvas);
+  }).observe(webglCanvas);
 
   syncMotion();
 })();
