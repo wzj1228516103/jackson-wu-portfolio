@@ -474,11 +474,24 @@ body::before {
   border-top: 1px solid var(--line);
 }
 .detail-section .label { margin-bottom: 12px; }
+.contribution-section {
+  grid-column: 2;
+  align-self: start;
+  justify-self: center;
+  width: min(490px, calc(100% - 24px));
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #0e0d13ed;
+  pointer-events: auto;
+}
 .contribution-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
 }
 .contribution-heading a {
   color: var(--muted);
@@ -490,6 +503,7 @@ body::before {
 .contribution-heading a:hover { color: var(--accent); }
 
 .contribution-count {
+  margin-top: 6px;
   color: var(--ink);
   font-size: 13px;
 }
@@ -502,12 +516,8 @@ body::before {
   font-size: 11px;
 }
 .contribution-card {
-  --day-size: 6px;
-  margin-top: 10px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: #0e0d13f2;
+  --day-size: 7px;
+  margin-top: 8px;
 }
 .contribution-scroll {
   overflow: auto hidden;
@@ -560,7 +570,7 @@ body::before {
   font-size: 9px;
 }
 .contribution-key span:first-child { margin-right: 2px; }
-.contribution-day-label { color: var(--ink); font-size: 12px; }
+.contribution-day-label { margin-top: 6px; color: var(--ink); font-size: 12px; }
 .contribution-retry {
   margin-top: 8px;
   padding: 4px 8px;
@@ -570,7 +580,7 @@ body::before {
   cursor: pointer;
   font-size: 12px;
 }
-@media (max-width: 800px) {
+@media (801px <= width <= 1050px), (max-width: 520px) {
   .contribution-card { --day-size: 5px; }
 }
 .detail-section p:not(.label, .date, .entry-role) { margin-top: 9px; }
@@ -639,6 +649,12 @@ body::before {
     pointer-events: auto;
   }
   .profile-panel, .profile-scroll { display: contents; }
+  .contribution-section {
+    align-self: stretch;
+    width: auto;
+    margin-block: 8px 20px;
+    scroll-margin-top: 16px;
+  }
   .intro { order: -3; padding: clamp(140px, 24svh, 215px) 0 22px; }
   .intro h1 { font-size: clamp(36px, 10vw, 62px); }
   .profile-nav { order: -2; gap: 8px 16px; margin-bottom: 20px; }
