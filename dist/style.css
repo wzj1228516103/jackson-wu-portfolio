@@ -475,16 +475,11 @@ body::before {
 }
 .detail-section .label { margin-bottom: 12px; }
 .contribution-section {
-  grid-column: 2;
-  align-self: start;
-  justify-self: center;
-  width: min(490px, calc(100% - 24px));
-  min-width: 0;
+  margin-bottom: 20px;
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #0e0d13ed;
-  pointer-events: auto;
 }
 .contribution-heading {
   display: flex;
@@ -516,7 +511,7 @@ body::before {
   font-size: 11px;
 }
 .contribution-card {
-  --day-size: 7px;
+  --day-size: 5px;
   margin-top: 8px;
 }
 .contribution-scroll {
@@ -579,9 +574,6 @@ body::before {
   color: var(--accent);
   cursor: pointer;
   font-size: 12px;
-}
-@media (801px <= width <= 1050px), (max-width: 520px) {
-  .contribution-card { --day-size: 5px; }
 }
 .detail-section p:not(.label, .date, .entry-role) { margin-top: 9px; }
 .detail-section ul { margin-top: 8px; line-height: 1.65; }
@@ -650,9 +642,7 @@ body::before {
   }
   .profile-panel, .profile-scroll { display: contents; }
   .contribution-section {
-    align-self: stretch;
-    width: auto;
-    margin-block: 8px 20px;
+    margin-top: 8px;
     scroll-margin-top: 16px;
   }
   .intro { order: -3; padding: clamp(140px, 24svh, 215px) 0 22px; }
