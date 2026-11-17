@@ -153,6 +153,7 @@ export default {
   "教育背景": "学歴",
 
   "正在展示 {count} 个项目": "{count} 件のプロジェクトを表示中",
+  "GitHub 星标数：{count}": "GitHub スター数：{count}",
   "{date} · {count} 次贡献": "{date} · {count} 件のコントリビューション",
   "上次成功更新于 {timestamp}（北京时间）": "前回の更新：{timestamp}（中国標準時）",
   "每日更新 · {timestamp}（北京时间）": "毎日更新 · {timestamp}（中国標準時）",

@@ -1,4 +1,4 @@
-import { t } from "./localize.mjs";
+import { locale, t } from "./localize.mjs";
 
 (() => {
   const filters = document.querySelector(".filters");
@@ -35,6 +35,35 @@ import { t } from "./localize.mjs";
     }
   }
 
+  async function showProjectStars() {
+    let stars;
+    try {
+      const response = await fetch("./project-stars.json");
+      if (!response.ok) return;
+      stars = await response.json();
+    } catch {
+      return;
+    }
+    if (!stars || typeof stars !== "object") return;
+
+    const format = new Intl.NumberFormat(locale);
+    for (const card of cards) {
+      const repo = card.dataset.githubRepo;
+      if (!repo) continue;
+      const total = stars[repo];
+      if (!Number.isSafeInteger(total) || total < 0) continue;
+
+      const badge = card.querySelector(".project-stars");
+      const count = format.format(total);
+      badge.textContent = "★ " + count;
+      const label = t("GitHub 星标数：{count}", { count });
+      badge.setAttribute("aria-label", label);
+      badge.title = label;
+      badge.hidden = false;
+    }
+  }
+
   addEventListener("hashchange", highlightLocation);
   highlightLocation();
+  showProjectStars();
 })();

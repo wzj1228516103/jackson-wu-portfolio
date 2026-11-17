@@ -151,6 +151,7 @@ export default {
   "云原生交付": "雲端原生交付",
   "教育背景": "教育背景",
   "正在展示 {count} 个项目": "正在顯示 {count} 個專案",
+  "GitHub 星标数：{count}": "GitHub 星標數：{count}",
   "{date} · {count} 次贡献": "{date} · {count} 次貢獻",
   "上次成功更新于 {timestamp}（北京时间）": "最近一次成功更新於 {timestamp}（北京時間）",
   "每日更新 · {timestamp}（北京时间）": "每日更新 · {timestamp}（北京時間）",

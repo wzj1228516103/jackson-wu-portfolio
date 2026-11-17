@@ -39,6 +39,9 @@ jobs:
             --output "$RUNNER_TEMP/github-contributions.html" \
             'https://github.com/users/wzj1228516103/contributions'
           node scripts/build-calendar.mjs "$RUNNER_TEMP/github-contributions.html"
+      - name: Update project star counts
+        continue-on-error: true
+        run: node scripts/build-project-stars.mjs
       - uses: actions/upload-pages-artifact@v5.0.0
         with:
           path: dist

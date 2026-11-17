@@ -157,6 +157,7 @@ export default {
   "教育背景": "Education",
   "选择语言": "Choose a language",
   "正在展示 {count} 个项目": "Projects shown: {count}",
+  "GitHub 星标数：{count}": "GitHub stars: {count}",
   "正在读取 GitHub 贡献日历…": "Loading GitHub contributions…",
   "暂时无法读取 GitHub 贡献日历。": "GitHub contributions are temporarily unavailable.",
   "{date} · {count} 次贡献": "{date} · Contributions: {count}",
