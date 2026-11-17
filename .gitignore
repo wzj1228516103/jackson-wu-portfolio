@@ -1,2 +1,6 @@
 /dist/contributions.json
 /dist/project-stars.json
+/chat/.env*
+!/chat/.env.example
+/chat/approved/
+/chat/__pycache__/

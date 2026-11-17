@@ -1,0 +1,10 @@
+**
+!chat/
+chat/**
+!chat/app.py
+!chat/sources.py
+!chat/requirements.txt
+!dist/
+dist/**
+!dist/index.html
+!dist/resume.html
