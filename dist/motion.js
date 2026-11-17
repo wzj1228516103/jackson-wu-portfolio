@@ -1,3 +1,5 @@
+import { t } from "./localize.mjs";
+
 (() => {
   const webglCanvas = document.querySelector("#bg");
   const canvas2d = document.querySelector("#bg-2d");
@@ -159,7 +161,7 @@
 
   function syncMotion() {
     if (unavailable) return;
-    button.textContent = paused ? "启用动效" : "暂停动效";
+    button.textContent = t(paused ? "启用动效" : "暂停动效");
     if (paused || !visible || document.hidden) {
       stopFrame();
       return;

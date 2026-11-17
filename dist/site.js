@@ -1,3 +1,5 @@
+import { t } from "./localize.mjs";
+
 (() => {
   const filters = document.querySelector(".filters");
   const cards = [...document.querySelectorAll(".project-card")];
@@ -18,7 +20,7 @@
     }
 
     const total = cards.filter(card => !card.hidden).length;
-    const message = "正在展示 " + total + " 个项目";
+    const message = t("正在展示 {count} 个项目", { count: total });
     count.textContent = String(total).padStart(2, "0");
     count.setAttribute("aria-label", message);
     status.textContent = message;

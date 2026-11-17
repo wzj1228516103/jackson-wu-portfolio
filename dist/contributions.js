@@ -1,3 +1,5 @@
+import { locale, t } from "./localize.mjs";
+
 (() => {
   const section = document.querySelector("#contributions");
   const grid = document.querySelector("#contribution-grid");
@@ -5,11 +7,13 @@
   const retry = document.querySelector("#contribution-retry");
   const dayLabel = document.querySelector("#contribution-day");
   const calendar = document.querySelector("#contribution-results");
-  const number = new Intl.NumberFormat("zh-CN");
-  const dateLabel = new Intl.DateTimeFormat("zh-CN", { dateStyle: "long", timeZone: "UTC" });
-  const updatedLabel = new Intl.DateTimeFormat("zh-CN", {
+  const number = new Intl.NumberFormat(locale);
+  const dateLabel = new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" });
+  const updatedLabel = new Intl.DateTimeFormat(locale, {
     month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai"
   });
+  const monthLabel = new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" });
+  const weekdayLabel = new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" });
   const cells = [];
   let activeCell;
   let loading = false;
@@ -37,8 +41,10 @@
     const offset = dates[0].getUTCDay();
     grid.style.setProperty("--weeks", Math.ceil((offset + dates.length) / 7));
     const contents = document.createDocumentFragment();
-    contents.append(label("一", "contribution-weekday", 1, 3),
-      label("三", "contribution-weekday", 1, 5), label("五", "contribution-weekday", 1, 7));
+    for (const weekday of [1, 3, 5]) {
+      const day = new Date(Date.UTC(2024, 0, weekday)); // January 1 was a Monday.
+      contents.append(label(weekdayLabel.format(day), "contribution-weekday", 1, weekday + 2));
+    }
 
     const first = dates[0];
     const nextMonth = Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 1);
@@ -46,12 +52,12 @@
     for (const [index, date] of dates.entries()) {
       const column = Math.floor((offset + index) / 7) + 2;
       if (date.getUTCDate() === 1 || (index === 0 && fullWeeksInFirstMonth >= 3)) {
-        contents.append(label((date.getUTCMonth() + 1) + "月", "contribution-month", column, 1));
+        contents.append(label(monthLabel.format(date), "contribution-month", column, 1));
       }
 
       const day = data.days[index];
       const cell = document.createElement("button");
-      const description = dateLabel.format(date) + " · " + number.format(day.count) + " 次贡献";
+      const description = t("{date} · {count} 次贡献", { date: dateLabel.format(date), count: number.format(day.count) });
       cell.type = "button";
       cell.className = "contribution-cell";
       cell.style.gridColumnStart = column;
@@ -72,7 +78,7 @@
     const timestamp = updatedLabel.format(fetchedAt);
     const stale = Date.now() - fetchedAt > 2 * 86400000;
     document.querySelector("#contribution-source").textContent =
-      (stale ? "上次成功更新于 " : "每日更新 · ") + timestamp + "（北京时间）";
+      t(stale ? "上次成功更新于 {timestamp}（北京时间）" : "每日更新 · {timestamp}（北京时间）", { timestamp });
     calendar.hidden = false;
     const scroll = grid.parentElement;
     scroll.scrollLeft = scroll.scrollWidth - scroll.clientWidth;
@@ -83,7 +89,7 @@
     loading = true;
     retry.hidden = true;
     state.hidden = false;
-    state.textContent = "正在读取 GitHub 贡献日历…";
+    state.textContent = t("正在读取 GitHub 贡献日历…");
     try {
       const response = await fetch("./contributions.json", { headers: { Accept: "application/json" } });
       if (!response.ok) throw new Error("Contributions unavailable");
@@ -94,7 +100,7 @@
       state.hidden = true;
       loaded = true;
     } catch {
-      state.textContent = "暂时无法读取 GitHub 贡献日历。";
+      state.textContent = t("暂时无法读取 GitHub 贡献日历。");
       retry.hidden = false;
     } finally {
       loading = false;

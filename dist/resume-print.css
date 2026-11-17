@@ -10,6 +10,10 @@
   --mono-font: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
+:root:lang(en) { --body-font: system-ui, sans-serif; }
+:root:lang(zh-TW) { --body-font: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif; }
+:root:lang(ja) { --body-font: "Yu Gothic UI", "Hiragino Sans", "Noto Sans CJK JP", system-ui, sans-serif; }
+
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
@@ -23,7 +27,7 @@ h1, h2, h3, p, dl, dd { margin: 0; }
 
 a { color: inherit; text-underline-offset: .17em; }
 
-a:focus-visible, button:focus-visible {
+a:focus-visible, button:focus-visible, select:focus-visible {
   outline: 2px solid var(--lavender);
   outline-offset: 4px;
 }
@@ -44,7 +48,7 @@ a:focus-visible, button:focus-visible {
 
 .toolbar a { color: var(--lavender); }
 
-.toolbar button {
+.toolbar button, .toolbar select {
   border: 1px solid #55436f;
   padding: 8px 13px;
   background: #191324;
@@ -53,7 +57,7 @@ a:focus-visible, button:focus-visible {
   cursor: pointer;
 }
 
-.toolbar button:hover { border-color: var(--lavender); }
+.toolbar button:hover, .toolbar select:hover { border-color: var(--lavender); }
 
 .sheet {
   color-scheme: light;
@@ -66,8 +70,8 @@ a:focus-visible, button:focus-visible {
 
 .identity {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  grid-template-areas: "person contact portrait";
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "person contact";
   align-items: end;
   gap: 1.2mm 3mm;
   padding-block-end: 4mm;
@@ -78,27 +82,10 @@ a:focus-visible, button:focus-visible {
 
 .identity address { grid-area: contact; }
 
-.identity-portrait {
-  grid-area: portrait;
-  display: block;
-  width: 20mm;
-  height: auto;
-  border: .65pt solid var(--rule);
-  border-radius: 1.5mm;
-}
-
 h1 {
   font-size: 26pt;
   letter-spacing: -.035em;
   line-height: 1.08;
-}
-
-h1 span {
-  display: inline-block;
-  margin-inline-start: .45em;
-  color: var(--accent);
-  font: 500 10pt var(--mono-font);
-  letter-spacing: 0;
 }
 
 .role {
@@ -195,12 +182,10 @@ h3 {
   .entry-head { flex-wrap: wrap; }
 
   .identity {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "person portrait" "contact portrait";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "person" "contact";
     align-items: center;
   }
-
-  .identity-portrait { width: clamp(50px, 16vw, 68px); }
 }
 
 @page { size: A4; margin: 0; }
@@ -208,7 +193,7 @@ h3 {
 @media print {
   :root { color-scheme: light; }
 
-  body { background: #fff; }
+  body { background: #fff; font-size: 10pt; line-height: 1.37; }
 
   .toolbar { display: none; }
 
@@ -216,11 +201,10 @@ h3 {
     width: 210mm;
     min-height: 297mm;
     margin: 0;
-    padding-block: 10mm;
+    padding: 10mm 13mm;
   }
 
   .identity { padding-block-end: 3mm; }
-  .identity-portrait { width: 18mm; }
   .summary { margin-block-start: 3mm; }
   .sheet section { margin-block-start: 3mm; }
   .entry + .entry { margin-block-start: 2mm; }

@@ -4,19 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <meta name="description" content="吴子杰（Jackson Wu）的个人简历与项目集，涵盖后端开发、AI 应用工程和小程序开发工程技能套件。">
+  <meta name="description" content="JacksonWu的个人简历与项目集，涵盖后端开发、AI 应用工程和小程序开发工程技能套件。">
   <meta name="robots" content="noindex, nofollow">
-  <title>吴子杰 · 后端开发与 AI 应用工程</title>
+  <title>JacksonWu · 后端开发与 AI 应用工程</title>
   <link rel="icon" href="./mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css?v=ascii-wide">
-  <script defer src="./site.js"></script>
-  <script defer src="./contributions.js"></script>
+  <link rel="stylesheet" href="./style.css?v=locales">
+  <script type="module" src="./site.js"></script>
+  <script type="module" src="./contributions.js"></script>
   <script defer src="./three-0.150.1.min.js"></script>
   <script defer src="./fluid.js"></script>
   <script defer src="./particles.js"></script>
   <script defer src="./motion-canvas.js"></script>
   <script defer src="./gradient-ascii.js?v=wide"></script>
-  <script defer src="./motion.js?v=ascii"></script>
+  <script type="module" src="./motion.js?v=locales"></script>
 </head>
 <body>
   <div class="motion-surface" aria-hidden="true">
@@ -27,12 +27,18 @@
   <a class="skip" href="#profile">跳到简历</a>
 
   <header class="site-head">
-    <a class="brand" href="#profile" aria-label="Jackson Wu，返回简历首页">
-      <img class="brand-avatar" src="./avatar.webp" alt="" width="42" height="42">
-      <span>JACKSON WU<small>个人简历与项目</small></span>
+    <a class="brand" href="#profile" aria-label="JacksonWu，返回简历首页">
+      <img class="brand-avatar" src="./mark.svg" alt="" width="42" height="42">
+      <span>JacksonWu<small>个人简历与项目</small></span>
     </a>
     <div class="head-actions">
-      <a class="print-link" href="./resume.html">A4 简历 <span aria-hidden="true">↗</span></a>
+      <select class="language-select" aria-label="选择语言" hidden>
+        <option value="zh-CN" lang="zh-CN">简体中文</option>
+        <option value="en" lang="en">English</option>
+        <option value="zh-TW" lang="zh-TW">繁體中文</option>
+        <option value="ja" lang="ja">日本語</option>
+      </select>
+      <a class="print-link" href="./resume.html" data-local-link>A4 简历 <span aria-hidden="true">↗</span></a>
       <span class="counter" id="project-count" aria-label="正在展示 12 个项目">12</span>
     </div>
   </header>
@@ -83,18 +89,18 @@
         <a class="project-card" href="#support" data-category="ai">
           <div class="project-art art-travel" aria-hidden="true">
             <span class="art-note">RAG / GEO</span>
-            <div class="map-path"><i></i><i></i><i></i></div><span class="art-word">beambox</span>
+            <div class="map-path"><i></i><i></i><i></i></div><span class="art-word">Support</span>
           </div>
-          <div class="project-meta"><strong>beambox 电商智能客服</strong><span aria-hidden="true">→</span></div>
+          <div class="project-meta"><strong>电商智能客服</strong><span aria-hidden="true">→</span></div>
           <div class="project-stack">FastAPI · Spring Boot · RAG · RabbitMQ</div>
         </a>
-        <a class="project-card" href="#beambox" data-category="backend">
+        <a class="project-card" href="#app-community" data-category="backend">
           <div class="project-art art-architecture" aria-hidden="true">
             <span class="art-note">SPRING CLOUD · SHARDING</span>
-            <span class="art-word">beambox<span> APP</span></span>
+            <span class="art-word">Community</span>
             <span class="art-lines"></span>
           </div>
-          <div class="project-meta"><strong>beambox APP 社区与微服务升级</strong><span aria-hidden="true">→</span></div>
+          <div class="project-meta"><strong>移动端社区与微服务升级</strong><span aria-hidden="true">→</span></div>
           <div class="project-stack">Nacos · ShardingSphere · Kubernetes</div>
         </a>
         <a class="project-card" href="#codegen" data-category="ai">
@@ -146,7 +152,7 @@
             <span class="art-reticle"></span>
           </div>
           <div class="project-meta"><strong>工业缺陷智能检测与边缘推理</strong><span aria-hidden="true">→</span></div>
-          <div class="project-stack">工业视觉 · 边缘推理 · 授权发明专利</div>
+          <div class="project-stack">工业视觉 · 边缘推理</div>
         </a>
       </div>
     </section>
@@ -157,13 +163,8 @@
       </nav>
       <div class="profile-scroll" role="region" aria-label="简历正文" tabindex="0">
         <section class="intro" id="profile" tabindex="-1" aria-labelledby="name">
-          <div class="intro-heading">
-            <div>
-              <p class="label">[ 个人简介 ]</p>
-              <h1 id="name">吴子杰<span aria-hidden="true">.</span></h1>
-            </div>
-            <img class="profile-portrait" src="./portrait.webp" alt="吴子杰的正式肖像" width="640" height="640">
-          </div>
+          <p class="label">[ 个人简介 ]</p>
+          <h1 id="name">JacksonWu<span aria-hidden="true">.</span></h1>
           <p class="role">后端开发 · AI 应用工程</p>
           <p class="lead">使用 Java 和 Python 开发智能硬件与 AI 应用，做过语音 Agent、海外社区和电商客服。主要开发小程序开发工程技能套件。</p>
           <div class="intro-actions">
@@ -176,16 +177,16 @@
           <h2 class="label" id="experience-title">[ 工作经历 ]</h2>
           <article class="resume-entry">
             <p class="date"><time datetime="2025-09">2025.09</time> — 至今</p>
-            <h3>深圳光胜人工智能科技</h3>
+            <h3>智能硬件与 AI 产品</h3>
             <p class="entry-role">Java 开发工程师</p>
             <ul>
-              <li>负责智能硬件社区与 AI 产品后端开发，覆盖语音交互桌面宠物、beambox 海外独立站客服和全球社区。</li>
-              <li>负责 popjoy 用户、设备、数据服务拆分，使用 Nacos、Sentinel 管理配置和流量，设计多租户数据隔离与 RBAC 授权。</li>
+              <li>负责智能硬件社区与 AI 产品后端开发，覆盖语音交互桌面宠物、海外电商客服和全球社区。</li>
+              <li>负责用户、设备、数据服务拆分，使用 Nacos、Sentinel 管理配置和流量，设计多租户数据隔离与 RBAC 授权。</li>
             </ul>
           </article>
           <article class="resume-entry">
             <p class="date"><time datetime="2025-05">2025.05</time> — <time datetime="2025-09">2025.09</time></p>
-            <h3>中国铁塔股份有限公司</h3>
+            <h3>通信基础设施</h3>
             <p class="entry-role">Java 开发工程师 · 数字孪生智慧大屏</p>
             <ul>
               <li>实现 OAuth 2.0 / JWT 认证，接入高德地图完成车辆与设备定位、轨迹绘制，结合扫码和 BOM 导入导出支持生产追溯。</li>
@@ -207,9 +208,7 @@
         <section class="detail-section" id="education" tabindex="-1" aria-labelledby="education-title">
           <h2 class="label" id="education-title">[ 教育经历 ]</h2>
           <article class="resume-entry">
-            <p class="date"><time datetime="2022-09">2022.09</time> — <time datetime="2026-06">2026.06</time></p>
-            <h3>五邑大学</h3>
-            <p class="entry-role">通信工程 · 本科</p>
+            <h3>通信工程 · 本科</h3>
             <p>校级奖学金（专业前 5%） · CET-4</p>
           </article>
         </section>
@@ -286,7 +285,7 @@
 
         <section class="detail-section project-detail" id="support" tabindex="-1" aria-labelledby="support-title">
           <p class="label">[ 公司项目 · AI 应用 ]</p>
-          <h2 id="support-title">beambox 电商智能客服</h2>
+          <h2 id="support-title">电商智能客服</h2>
           <p>在 Spring Boot 业务后端和 FastAPI AI 服务上提供海外电商问答、查单与售后分流。</p>
           <ul>
             <li>构建商品、物流和售后知识库，使用 RAG 回答咨询，借助工具查询订单，复杂问题生成工单转人工处理。</li>
@@ -294,9 +293,9 @@
           </ul>
         </section>
 
-        <section class="detail-section project-detail" id="beambox" tabindex="-1" aria-labelledby="beambox-title">
+        <section class="detail-section project-detail" id="app-community" tabindex="-1" aria-labelledby="app-community-title">
           <p class="label">[ 公司项目 · 后端架构 ]</p>
-          <h2 id="beambox-title">beambox APP 社区与微服务升级</h2>
+          <h2 id="app-community-title">移动端社区与微服务升级</h2>
           <p>为海外智能硬件用户提供宠物设备管理、内容互动和审核。负责设计和维护 300+ 个社区业务接口，并用 Apifox 管理接口文档与测试。</p>
           <ul>
             <li>按用户、宠物、社区、支付等业务域拆分服务，以用户 ID 为核心表分片键，用 ShardingSphere 落地分库分表。</li>
@@ -311,7 +310,7 @@
           <p>用 Spring AI、LangChain4j 和 LangGraph4j 整合模型调用、RAG、MCP 工具、会话记忆与 Agent 工作流。</p>
           <ul>
             <li>将需求分析、代码生成、文件操作、质量检查和构建拆成可编排节点，用 SSE 实时返回进度。</li>
-            <li>为文件工具加入路径校验、操作白名单和备份。基于平台能力实现五邑旅游助手，支持地点查询与行程规划。</li>
+            <li>为文件工具加入路径校验、操作白名单和备份。基于平台能力实现旅游助手，支持地点查询与行程规划。</li>
           </ul>
           <a class="detail-link" href="https://github.com/wzj1228516103/wzj-ai-code-mother">查看网页生成子项目 ↗</a>
         </section>
@@ -353,11 +352,9 @@
         </section>
 
         <section class="detail-section project-detail" id="vision" tabindex="-1" aria-labelledby="vision-title">
-          <p class="label">[ 工业视觉 · 共同发明人 ]</p>
+          <p class="label">[ 工业视觉 ]</p>
           <h2 id="vision-title">工业缺陷智能检测与边缘推理</h2>
           <p>参与设计基于深度学习芯片的工业质检方案，覆盖图像输入、特征处理、缺陷识别与结果输出。</p>
-          <p>共同发明专利《基于深度学习芯片的工业缺陷检测方法、设备及介质》于 2026.01 授权公告。</p>
-          <a class="detail-link" href="https://patents.google.com/patent/CN119559119B/zh">查看授权公告 CN119559119B ↗</a>
         </section>
         <footer class="panel-footer"><a href="#profile">↑ 返回简介</a><a class="back-projects" href="#work">↑ 返回项目</a></footer>
       </div>
