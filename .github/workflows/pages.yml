@@ -32,6 +32,10 @@ jobs:
           node-version: "24"
       - uses: actions/configure-pages@v6.0.0
       - name: Update the contribution calendar
+
+      # GitHub's contributions markup changes without notice and the parser throws on it.
+      # The calendar is decorative, so keep the last generated data and deploy anyway.
+      continue-on-error: true
         run: |
           curl --fail --silent --show-error --location \
             --connect-timeout 8 --max-time 25 --retry 2 --retry-all-errors \
