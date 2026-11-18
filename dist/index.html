@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>JacksonWu · 后端开发与 AI 应用工程</title>
   <link rel="icon" href="./jacksonwu-avatar.png" type="image/png" sizes="256x256">
-  <link rel="stylesheet" href="./style.css?v=settled-chat">
+  <link rel="stylesheet" href="./style.css?v=markdown-chat">
   <script type="module" src="./site.js?v=project-stars"></script>
   <script type="module" src="./contributions.js"></script>
   <script defer src="./three-0.150.1.min.js"></script>
@@ -17,7 +17,7 @@
   <script defer src="./motion-canvas.js"></script>
   <script defer src="./gradient-ascii.js?v=wide"></script>
   <script type="module" src="./motion.js?v=settled-chat"></script>
-  <script type="module" src="./chat.js?v=settled-chat"></script>
+  <script type="module" src="./chat.js?v=markdown-chat"></script>
   <script type="module" src="./essays.js"></script>
 </head>
 <body>
@@ -28,7 +28,10 @@
   </div>
   <div class="chat-answer-region" data-chat-answer-region>
     <div class="chat-answer-output" role="region" data-chat-answer-output data-chat-label="answer" tabindex="0" hidden>
-      <p class="chat-answer-copy"><span data-chat-finished></span><span class="chat-frontier" data-chat-frontier aria-hidden="true"></span></p>
+      <div class="chat-answer-copy">
+        <p class="chat-answer-draft" data-chat-draft><span data-chat-revealed></span><span class="chat-frontier" data-chat-frontier aria-hidden="true"></span></p>
+        <div class="chat-answer-markdown" data-chat-markdown data-chat-finished hidden></div>
+      </div>
     </div>
     <p class="sr-only" aria-live="polite" aria-atomic="true" data-chat-announcement></p>
   </div>

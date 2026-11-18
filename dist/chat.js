@@ -1,5 +1,6 @@
 import { locale } from "./localize.mjs";
-import translations from "./chat-copy.mjs?v=settled-chat";
+import translations from "./chat-copy.mjs?v=markdown-chat";
+import { answerPreviewText, renderAnswerMarkdown } from "./answer-markdown.mjs?v=markdown-chat";
 
 const copy = translations[locale] ?? translations["zh-CN"];
 const requestLimitCodes = new Set(["rate_limited", "daily_limit", "busy"]);
@@ -65,6 +66,10 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
       selection.getRangeAt(0).intersectsNode(output));
   }
 
+  function readingWithKeyboard() {
+    return output.matches(":focus-visible") || Boolean(output.querySelector(":focus-visible"));
+  }
+
   function restore(anchor) {
     delete anchor.dataset.scattered;
     if (!anchor.isConnected || hasSelection()) return;
@@ -93,39 +98,38 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
     const right = Math.min(area.right, point ? point.x + radius : innerWidth);
     if (top >= bottom || left >= right) return { anchors: [], inserted: [] };
 
-    const nodes = [];
-    let end = 0;
-    for (const child of finished.childNodes) {
-      const text = child.nodeType === Node.TEXT_NODE ? child : child.firstChild;
-      if (!(text instanceof Text) || !text.length) continue;
-      nodes.push({ text, start: end, end: end + text.length });
-      end += text.length;
-    }
-    const measure = glyph => {
-      const node = nodes.find(node => glyph.start < node.end);
-      if (!node || glyph.end > node.end) return null;
-      const range = document.createRange();
-      range.setStart(node.text, glyph.start - node.start);
-      range.setEnd(node.text, glyph.end - node.start);
-      return { range, rect: range.getBoundingClientRect() };
-    };
-
-    let first = 0;
-    let last = glyphs.length;
-    while (first < last) {
-      const index = (first + last) >>> 1;
-      const measured = measure(glyphs[index]);
-      if (measured && measured.rect.bottom < top) first = index + 1;
-      else last = index;
-    }
-
     const ranges = [];
-    for (let index = first; index < glyphs.length; index++) {
-      const measured = measure(glyphs[index]);
-      if (!measured) continue;
-      const { range, rect } = measured;
-      if (rect.top > bottom) break;
-      if (rect.width && rect.height && rect.bottom > top && rect.left < right && rect.right > left) {
+    const walker = document.createTreeWalker(finished, NodeFilter.SHOW_TEXT);
+    let offset = 0;
+    let cursor = 0;
+    for (let text = walker.nextNode(); text && cursor < glyphs.length; text = walker.nextNode()) {
+      const start = offset;
+      offset += text.length;
+      let first = cursor;
+      while (cursor < glyphs.length && glyphs[cursor].start < offset) cursor++;
+      if (cursor === first || (point && text.parentElement.closest("a"))) continue;
+      const parent = text.parentElement.getBoundingClientRect();
+      if (parent.bottom < top || parent.top > bottom || parent.right < left || parent.left > right) continue;
+      const scrollFrame = text.parentElement.closest("pre")?.getBoundingClientRect();
+      const clipLeft = Math.max(left, scrollFrame?.left ?? left);
+      const clipRight = Math.min(right, scrollFrame?.right ?? right);
+      const measure = index => {
+        const glyph = glyphs[index];
+        const range = document.createRange();
+        range.setStart(text, glyph.start - start);
+        range.setEnd(text, glyph.end - start);
+        return { range, rect: range.getBoundingClientRect() };
+      };
+      let last = cursor;
+      while (first < last) {
+        const index = (first + last) >>> 1;
+        if (measure(index).rect.bottom < top) first = index + 1;
+        else last = index;
+      }
+      for (let index = first; index < cursor; index++) {
+        const { range, rect } = measure(index);
+        if (rect.top > bottom) break;
+        if (!rect.width || !rect.height || rect.bottom <= top || rect.left >= clipRight || rect.right <= clipLeft) continue;
         const distance = point ? Math.hypot(
           Math.max(rect.left - point.x, 0, point.x - rect.right),
           Math.max(rect.top - point.y, 0, point.y - rect.bottom)
@@ -191,13 +195,14 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
     noteInteraction();
     const particles = window.portfolioParticles;
     if (event.pointerType !== "mouse" || event.buttons || reduced.matches || hasSelection() ||
-        output.matches(":focus-visible") || !particles?.scatterGlyphs ||
+        readingWithKeyboard() || (event.target instanceof Element && event.target.closest("a")) ||
+        !particles?.scatterGlyphs ||
         performance.now() - lastScan < 24) return;
     lastScan = performance.now();
     const { anchors, inserted } = visibleGlyphs({ x: event.clientX, y: event.clientY });
     if (!anchors?.length) return;
     if (!particles.scatterGlyphs(anchors, (anchor, active) => {
-      if (active && !hasSelection() && !output.matches(":focus-visible")) anchor.dataset.scattered = "";
+      if (active && !hasSelection() && !readingWithKeyboard()) anchor.dataset.scattered = "";
       else restore(anchor);
     })) inserted.forEach(restore);
   }, { capture: true, passive: true });
@@ -210,7 +215,7 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
     if (!glyphs.length) return;
     restoreAll();
     noteInteraction();
-  }, { passive: true });
+  }, { capture: true, passive: true });
   output.addEventListener("pointerleave", noteInteraction, { passive: true });
   output.addEventListener("focusin", () => {
     if (!glyphs.length) return;
@@ -234,13 +239,16 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
 
   return {
     noteInteraction,
-    settle(segments) {
+    settle(segment) {
       let offset = 0;
       glyphs = [];
-      for (const text of segments) {
-        const end = offset + text.length;
-        if (text.trim()) glyphs.push({ start: offset, end });
-        offset = end;
+      const walker = document.createTreeWalker(finished, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        for (const text of segment(node.data)) {
+          const end = offset + text.length;
+          if (text.trim()) glyphs.push({ start: offset, end });
+          offset = end;
+        }
       }
       noteInteraction();
     },
@@ -255,10 +263,12 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
 
 function createAnswerOutput(canIdle, onIdle) {
   const output = document.querySelector("[data-chat-answer-output]");
+  const draft = output.querySelector("[data-chat-draft]");
+  const revealed = output.querySelector("[data-chat-revealed]");
   const frontier = output.querySelector("[data-chat-frontier]");
-  const finished = output.querySelector("[data-chat-finished]");
+  const finished = output.querySelector("[data-chat-markdown]");
   const completed = document.createTextNode("");
-  finished.append(completed);
+  revealed.append(completed);
   const announcement = document.querySelector("[data-chat-announcement]");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const segmenter = typeof Intl.Segmenter === "function"
@@ -272,6 +282,8 @@ function createAnswerOutput(canIdle, onIdle) {
   let activeGlyph;
   let ended = false;
   let settled = false;
+  let preview = "";
+  let finalSource = "";
   const effects = createSettledEffects(output, finished, reduced, canIdle, () => {
     clear();
     onIdle();
@@ -286,22 +298,54 @@ function createAnswerOutput(canIdle, onIdle) {
     if (follow) output.scrollTop = output.scrollHeight;
   }
 
-  function reset() {
-    effects.reset();
+  function discardDraftTail() {
     clearTimeout(tailTimer);
     clearTimeout(glyphTimer);
     tailTimer = glyphTimer = activeGlyph = undefined;
-    ended = false;
-    settled = false;
     pending = [];
     cursor = 0;
     tail = "";
-    completed.data = "";
-    finished.replaceChildren(completed);
     frontier.textContent = "";
+    window.portfolioParticles?.clearGlyph?.();
+  }
+
+  function reset() {
+    effects.reset();
+    discardDraftTail();
+    ended = false;
+    settled = false;
+    preview = finalSource = completed.data = "";
+    finished.replaceChildren();
+    finished.hidden = true;
+    draft.hidden = false;
     announcement.textContent = "";
     output.scrollTop = 0;
-    window.portfolioParticles?.clearGlyph?.();
+  }
+
+  function showOutput() {
+    if (!output.hidden) return;
+    document.body.dataset.answerActive = "";
+    output.hidden = false;
+    window.portfolioParticles?.beginAnswer?.();
+  }
+
+  function settleMarkdown() {
+    const fragment = renderAnswerMarkdown(finalSource, copy);
+    if (!fragment.hasChildNodes() && preview.trim()) {
+      const paragraph = document.createElement("p");
+      paragraph.textContent = preview;
+      fragment.append(paragraph);
+    }
+    if (!fragment.hasChildNodes()) return;
+    showOutput();
+    followEnd(() => {
+      finished.replaceChildren(fragment);
+      finished.hidden = false;
+      draft.hidden = true;
+      completed.data = "";
+    });
+    announcement.textContent = finished.innerText.trim();
+    effects.settle(segment);
   }
 
   function pump() {
@@ -353,10 +397,9 @@ function createAnswerOutput(canIdle, onIdle) {
     }
     pending = [];
     cursor = 0;
-    if (ended && !settled && completed.length) {
+    if (ended && !settled && finalSource.trim()) {
       settled = true;
-      announcement.textContent = completed.data;
-      effects.settle(segment(completed.data));
+      settleMarkdown();
     }
   }
 
@@ -370,11 +413,7 @@ function createAnswerOutput(canIdle, onIdle) {
 
   function write(text) {
     if (!text) return;
-    if (output.hidden && text.trim()) {
-      document.body.dataset.answerActive = "";
-      output.hidden = false;
-      window.portfolioParticles?.beginAnswer?.();
-    }
+    if (text.trim()) showOutput();
     if (!tail && pending.length > cursor) tail = pending.pop();
     const unread = tail + text;
     const segments = segment(unread);
@@ -383,6 +422,22 @@ function createAnswerOutput(canIdle, onIdle) {
     clearTimeout(tailTimer);
     tailTimer = setTimeout(flushTail, 52);
     pump();
+  }
+
+  function update(source) {
+    const next = answerPreviewText(source);
+    if (next === preview) return;
+    if (next.startsWith(preview)) {
+      write(next.slice(preview.length));
+    } else {
+      discardDraftTail();
+      if (!next.startsWith(completed.data)) {
+        const shown = segment(completed.data).length;
+        followEnd(() => { completed.data = segment(next).slice(0, shown).join(""); });
+      }
+      write(next.slice(completed.length));
+    }
+    preview = next;
   }
 
   function clear() {
@@ -394,14 +449,12 @@ function createAnswerOutput(canIdle, onIdle) {
 
   return {
     get visible() { return !output.hidden; },
-    write,
-    finish() {
+    update,
+    finish(source) {
+      update(source);
+      finalSource = source;
       ended = true;
       flushTail();
-    },
-    replace(text) {
-      reset();
-      write(text);
     },
     clear,
     noteInteraction: effects.noteInteraction
@@ -479,17 +532,15 @@ function enableChat(footer, endpoint) {
         }
         if (!controller.signal.aborted && typeof event.text === "string") {
           streamed += event.text;
-          answer.write(event.text);
+          answer.update(streamed);
           clear.hidden = !answer.visible;
         }
       });
       if (controller.signal.aborted) throw new Error("Chat request stopped");
       const final = typeof result.text === "string" && result.text.trim() ? result.text : streamed;
       if (!final.trim()) throw new Error("Empty answer");
-      if (final.startsWith(streamed)) answer.write(final.slice(streamed.length));
-      else answer.replace(final);
+      answer.finish(final);
       clear.hidden = !answer.visible;
-      answer.finish();
 
       if (typeof result.sessionId === "string") sessionId = result.sessionId;
       status.textContent = "";
@@ -498,7 +549,8 @@ function enableChat(footer, endpoint) {
       if (!request.dismissed) {
         retryQuestion = question;
         status.textContent = controller.signal.aborted ? copy.stopped : failure;
-        answer.finish();
+        answer.finish(streamed);
+        clear.hidden = !answer.visible;
       }
     } finally {
       activeRequest = undefined;
