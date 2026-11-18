@@ -610,22 +610,36 @@ body::before {
   z-index: 5;
   inset-inline: var(--chat-start, var(--gutter)) var(--chat-end, var(--gutter));
   bottom: calc(12px + env(safe-area-inset-bottom));
-  max-width: 420px;
+  max-width: 450px;
   margin-inline: auto;
 }
 
 .chat-compose {
   display: flex;
   align-items: center;
-  gap: 3px;
-  height: 42px;
-  padding: 3px 4px 3px 9px;
-  border: 1px solid #514761;
+  gap: 5px;
+  height: 48px;
+  padding: 4px 5px 4px 8px;
+  border: 1px solid #9279c7;
   border-radius: 999px;
-  background: #171220f7;
-  box-shadow: 0 3px 16px #0008;
+  background: linear-gradient(110deg, #2a1f43, #171222 65%);
+  box-shadow: 0 4px 22px #000b, 0 0 18px #9c74ff32;
 }
-.chat-compose:focus-within { border-color: var(--accent); }
+.chat-compose:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 4px 22px #000b, 0 0 0 2px #b79bff38, 0 0 21px #9c74ff42;
+}
+.chat-compose-ai {
+  display: grid;
+  flex: 0 0 28px;
+  place-items: center;
+  height: 28px;
+  border: 1px solid #ad92f271;
+  border-radius: 50%;
+  background: #b79bff24;
+  color: #e5d9ff;
+  font: 700 10px/1 var(--mono);
+}
 .chat-entry input {
   flex: 1 1 auto;
   min-width: 0;
@@ -638,7 +652,7 @@ body::before {
   font: inherit;
   font-size: 13px;
 }
-.chat-entry input::placeholder { color: var(--muted); }
+.chat-entry input::placeholder { color: #d5c9e8; }
 .chat-entry input:focus { outline: none; }
 
 .chat-feedback {
@@ -673,7 +687,9 @@ body::before {
 }
 .chat-icon:hover:not(:disabled) { border-color: #71618b; color: var(--ink); }
 .chat-icon:disabled { opacity: .48; cursor: default; }
-.chat-send, .chat-stop { color: var(--ink); background: #664aa4; }
+.chat-send, .chat-stop { color: #1a102e; background: #c6adff; }
+.chat-send:disabled { opacity: .65; }
+.chat-send:hover:not(:disabled), .chat-stop:hover:not(:disabled) { background: #e0ceff; color: #1a102e; }
 .chat-stop { font-size: 12px; }
 
 .chat-answer-region {
@@ -868,18 +884,6 @@ body[data-answer-active] .site-head { z-index: 4; }
 }
 
 
-/* Essays keep their own light typography (author inline styles), so they sit on a paper-like surface. */
-.essay-surface {
-  background: #fbf9f5;
-  color: #333;
-  border-radius: 12px;
-  padding: clamp(1rem, 3vw, 2rem);
-}
-.essay-surface img { max-width: 100%; height: auto; }
-
-
-
-
 /* 随记: cards in the right panel reuse the project card artwork classes. */
 .essay-list { display: grid; gap: 4px; margin-top: 14px; }
 .essay-card {
@@ -894,46 +898,154 @@ body[data-answer-active] .site-head { z-index: 4; }
 .essay-card:hover .project-meta, .essay-card[aria-current="location"] .project-meta { color: var(--accent); }
 
 
-/* Reader dialog for 随记: paper-like page on top of the site. */
+/* Essays share the portfolio palette and keep a separate reading measure. */
+html:has(.essay-dialog[open]) { overflow: hidden; }
 .essay-dialog {
+  --reader-padding: clamp(22px, 5.5vw, 60px);
   position: fixed;
   inset: 0;
-  width: min(920px, calc(100% - 2 * var(--gutter)));
+  width: min(840px, calc(100% - 2 * var(--gutter)));
+  max-width: none;
   height: min(88dvh, 940px);
+  max-height: none;
   margin: auto;
   padding: 0;
   overflow: hidden;
-  border: 1px solid #d8d0c2;
-  border-radius: 14px;
-  background: #fbf9f5;
-  color: #333;
+  border: 1px solid #514761;
+  border-radius: 16px;
+  background: radial-gradient(ellipse 105% 325px at 72% 0%, #302248ab, transparent 84%), var(--panel);
+  box-shadow: 0 24px 90px #000b;
+  color: var(--text);
 }
 .essay-dialog[open] { display: grid; grid-template-rows: auto minmax(0, 1fr); }
-.essay-dialog::backdrop { background: #000a; }
-.essay-dialog-head {
+.essay-dialog::backdrop {
+  background: #050409b8;
+  backdrop-filter: blur(5px);
+}
+.essay-dialog-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 18px;
-  border-bottom: 1px solid #e6e0d6;
+  padding: 12px var(--reader-padding);
+  border-bottom: 1px solid var(--line);
+  background: #100d16b0;
 }
-.essay-dialog-head h2 { margin: 0; font-size: 16px; color: #3d372e; }
+.essay-dialog-date {
+  color: var(--accent);
+  font: 500 12px/1.3 var(--mono);
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
 .essay-close {
-  border: 1px solid #d8d0c2;
-  border-radius: 999px;
-  padding: 4px 14px;
-  background: #fff;
-  color: #3d372e;
-  font: inherit;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  margin-inline-start: auto;
+  padding: 6px 13px;
+  border: 1px solid #514761;
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
   cursor: pointer;
 }
-.essay-close:hover, .essay-close:focus-visible { border-color: #b9ab94; }
-.essay-dialog-body {
+.essay-close span[aria-hidden="true"] { color: var(--accent); font: 15px/1 var(--mono); }
+.essay-close:hover, .essay-close:focus-visible { border-color: var(--accent); color: var(--accent); }
+.essay-dialog-scroll {
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 0 22px 32px;
+  scrollbar-width: thin;
+  scrollbar-color: #514761 transparent;
 }
-.essay-dialog-body img { max-width: 100%; height: auto; }
+.essay-dialog-inner {
+  max-width: 760px;
+  margin-inline: auto;
+  padding: clamp(24px, 5.4vw, 52px) var(--reader-padding) clamp(36px, 7vw, 70px);
+}
+.essay-dialog-title {
+  margin-block-end: clamp(18px, 3vw, 28px);
+  padding-block-end: clamp(17px, 3vw, 25px);
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: clamp(29px, 5.7vw, 50px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -.035em;
+}
+.essay-dialog-body {
+  overflow-wrap: anywhere;
+  font-size: clamp(16px, 1.8vw, 18px);
+  line-height: 1.85;
+}
+.essay-dialog-body :is(p, .memory-content, .diary-content, .reflection-content) { margin-block: 1em; }
+.essay-dialog-body :is(p, .memory-content, .diary-content, .reflection-content):first-child { margin-block-start: 0; }
+.essay-dialog-body strong { color: var(--ink); }
+.essay-dialog-body a { color: var(--accent); text-decoration: underline; text-underline-offset: .2em; }
+.essay-dialog-body a:hover { color: var(--ink); }
+.essay-dialog-body :is(blockquote, .memory-quote, .memory-highlight, .highlight) {
+  margin: 1.5em 0;
+  padding: .75em 1.1em;
+  border-inline-start: 2px solid var(--accent);
+  border-radius: 0 7px 7px 0;
+  background: #20182e;
+  color: var(--ink);
+}
+.essay-dialog-body blockquote > :last-child { margin-block-end: 0; }
+.essay-dialog-body .birthday-container { text-align: center; }
+.essay-dialog-body .birthday-text {
+  color: var(--ink);
+  font-size: clamp(21px, 4.5vw, 34px);
+  font-weight: 660;
+  line-height: 1.45;
+}
+.essay-dialog-body .birthday-text + .birthday-text {
+  margin-block-start: .35em;
+  color: var(--accent);
+  font: 500 .94em/1.45 var(--mono);
+}
+.essay-figure { margin: clamp(18px, 3.4vw, 34px) 0; text-align: center; }
+.essay-dialog-body img {
+  display: block;
+  max-width: 100%;
+  max-height: min(66dvh, 610px);
+  width: auto;
+  height: auto;
+  margin-inline: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #0c0a0f;
+  object-fit: contain;
+}
+.essay-figure figcaption {
+  margin-block-start: 9px;
+  color: var(--muted);
+  font-size: .8em;
+  line-height: 1.5;
+}
+.essay-image-unavailable {
+  padding: .85em 1em;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #0c0a0f;
+  color: var(--muted);
+  font-size: .875em;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .essay-dialog {
+    width: calc(100% - 16px);
+    height: calc(100dvh - 16px);
+    border-radius: 12px;
+  }
+  .essay-dialog-bar { padding-block: 7px; }
+  .essay-close { min-height: 44px; }
+  .essay-dialog-inner { padding-block-end: max(36px, env(safe-area-inset-bottom)); }
+}

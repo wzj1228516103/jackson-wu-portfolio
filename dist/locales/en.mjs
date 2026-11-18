@@ -1,5 +1,8 @@
 export default {
   "随记": "Notes",
+  "返回随记": "Back to notes",
+  "图片暂时无法加载": "Image unavailable",
+  "拖动桌面宠物": "Move the desktop pet",
   "[ 随记 ]": "[ Notes ]",
   "博客里的记录": "Notes from the blog",
   "2023 到 2025 年写的五篇记录，从旧博客搬过来：": "Five posts written between 2023 and 2025, migrated from the old blog:",
