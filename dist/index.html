@@ -8,16 +8,16 @@
   <meta name="robots" content="noindex, nofollow">
   <title>JacksonWu · 后端开发与 AI 应用工程</title>
   <link rel="icon" href="./jacksonwu-avatar.png" type="image/png" sizes="256x256">
-  <link rel="stylesheet" href="./style.css?v=portfolio-chat">
+  <link rel="stylesheet" href="./style.css?v=scene-chat">
   <script type="module" src="./site.js?v=project-stars"></script>
   <script type="module" src="./contributions.js"></script>
   <script defer src="./three-0.150.1.min.js"></script>
   <script defer src="./fluid.js"></script>
-  <script defer src="./particles.js"></script>
+  <script defer src="./particles.js?v=scene-chat"></script>
   <script defer src="./motion-canvas.js"></script>
   <script defer src="./gradient-ascii.js?v=wide"></script>
-  <script type="module" src="./motion.js?v=locales"></script>
-  <script type="module" src="./chat.js"></script>
+  <script type="module" src="./motion.js?v=scene-chat"></script>
+  <script type="module" src="./chat.js?v=scene-chat"></script>
   <script type="module" src="./essays.js"></script>
 </head>
 <body>
@@ -25,6 +25,10 @@
     <canvas class="gradient-ascii" id="gradient-ascii"></canvas>
     <canvas class="particle-canvas" id="bg"></canvas>
     <canvas class="particle-canvas" id="bg-2d"></canvas>
+  </div>
+  <div class="chat-answer-region" data-chat-answer-region>
+    <div class="chat-answer-fallback" role="region" data-chat-answer-fallback data-chat-label="answer" tabindex="0" hidden></div>
+    <p class="sr-only" aria-live="polite" aria-atomic="true" data-chat-announcement></p>
   </div>
   <a class="skip" href="#profile">跳到简历</a>
 
@@ -42,6 +46,7 @@
       </select>
       <a class="print-link" href="./resume.html" data-local-link>A4 简历 <span aria-hidden="true">↗</span></a>
       <span class="counter" id="project-count" aria-label="正在展示 12 个项目">12</span>
+      <button class="motion-toggle" id="motion-toggle" type="button" hidden>暂停动效</button>
     </div>
   </header>
 
@@ -185,7 +190,6 @@
           <p class="role">后端开发 · AI 应用工程</p>
           <p class="lead">使用 Java 和 Python 开发智能硬件与 AI 应用，做过语音 Agent、海外社区和电商客服。主要开发小程序开发工程技能套件。</p>
           <div class="intro-actions">
-            <button class="chat-shortcut" type="button" data-chat-open data-chat-copy="title" aria-haspopup="dialog" aria-controls="portfolio-chat-dialog" hidden>作品集问答</button>
             <a href="https://github.com/wzj1228516103">GitHub <span aria-hidden="true">↗</span></a>
             <a href="#miniprogram-skill">查看开源 Skill <span aria-hidden="true">↓</span></a>
           </div>
@@ -795,32 +799,26 @@
     </div>
   </main>
 
-  <footer class="chat-footer" data-chat-endpoint="">
-    <button class="chat-button chat-launcher" type="button" data-chat-open data-chat-copy="title" aria-haspopup="dialog" aria-controls="portfolio-chat-dialog" hidden>作品集问答</button>
-    <button class="motion-toggle" id="motion-toggle" type="button" hidden>暂停动效</button>
-  </footer>
-
-  <dialog class="chat-dialog" id="portfolio-chat-dialog" aria-labelledby="portfolio-chat-title">
-    <header class="chat-head">
-      <h2 id="portfolio-chat-title" data-chat-copy="title" tabindex="-1" autofocus>作品集问答</h2>
-      <button class="chat-button" type="button" data-chat-close data-chat-copy="close">关闭</button>
-    </header>
-    <p class="chat-scope" data-chat-copy="scope">根据公开的项目、简历和技术笔记回答。</p>
-    <div class="chat-transcript" tabindex="0" role="region" data-chat-transcript>
-      <div class="chat-prompts" data-chat-prompts></div>
-      <ol class="chat-messages" data-chat-messages></ol>
-    </div>
-    <form class="chat-compose" data-chat-form>
-      <label for="portfolio-chat-input" data-chat-copy="prompt">关于作品集的问题</label>
-      <textarea id="portfolio-chat-input" rows="2" maxlength="1500" required></textarea>
-      <div class="chat-actions">
+  <footer class="chat-footer" data-chat-endpoint="https://39.105.128.249/portfolio-agent/chat/stream" hidden>
+    <form class="chat-entry" data-chat-entry>
+      <div class="chat-feedback">
         <p class="chat-status" role="status" data-chat-status></p>
+        <div class="chat-pager" data-chat-pager hidden>
+          <button class="chat-icon" type="button" data-chat-prev data-chat-label="previous">‹</button>
+          <span class="chat-page" data-chat-page></span>
+          <button class="chat-icon" type="button" data-chat-next data-chat-label="next">›</button>
+        </div>
+        <button class="chat-icon chat-clear" type="button" data-chat-clear data-chat-label="clear" hidden>×</button>
+      </div>
+      <div class="chat-compose">
+        <label class="sr-only" for="portfolio-chat-entry" data-chat-copy="prompt">询问 JacksonWu 的项目或经历</label>
+        <input id="portfolio-chat-entry" type="text" maxlength="1500" enterkeyhint="send" placeholder="询问 JacksonWu 的项目或经历" required>
         <button class="chat-button" type="button" data-chat-retry data-chat-copy="retry" hidden>重试</button>
         <button class="chat-button" type="button" data-chat-stop data-chat-copy="stop" hidden>停止</button>
         <button class="chat-button chat-send" type="submit" data-chat-send data-chat-copy="send" disabled>发送</button>
       </div>
     </form>
-  </dialog>
+  </footer>
   <dialog class="essay-dialog" id="essay-dialog" aria-labelledby="essay-dialog-title">
     <header class="essay-dialog-head">
       <h2 id="essay-dialog-title" data-essay-title></h2>

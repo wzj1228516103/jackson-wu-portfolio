@@ -113,9 +113,17 @@
   const pointVertex = `
     attribute vec4 random;
     uniform sampler2D uPosition;
+    uniform sampler2D uAnswerFrom;
+    uniform sampler2D uAnswerTo;
+    uniform float uAnswerProgress;
+    uniform float uAnswerFocus;
+    uniform float uAnswerSize;
+    uniform float uParticleSize;
     uniform float uDPR;
     varying vec4 vRandom;
     varying float vScale;
+    varying float vAnswer;
+    varying float vOpacity;
 
     void main() {
       vec3 pos = texture2D(uPosition, position.xy).xyz;
@@ -126,6 +134,27 @@
       vRandom = random;
       gl_Position = projectionMatrix * viewPosition;
       gl_PointSize = 0.04 * uDPR * 2.0 * vScale * (1000.0 / viewDistance);
+      vAnswer = 0.0;
+      vOpacity = 1.0 - uAnswerFocus;
+
+      if (uAnswerFocus > 0.0) {
+        vec2 cell = floor(position.xy * uParticleSize);
+        float index = cell.y * uParticleSize + cell.x;
+        if (index < uAnswerSize * uAnswerSize) {
+          vec2 uv = (vec2(mod(index, uAnswerSize), floor(index / uAnswerSize)) + 0.5) / uAnswerSize;
+          vec4 from = texture2D(uAnswerFrom, uv);
+          vec4 to = texture2D(uAnswerTo, uv);
+          vec2 origin = from.z == 0.0 ? to.xy : from.xy;
+          vec2 destination = to.z == 0.0 ? from.xy : to.xy;
+          vec2 glyph = mix(origin, destination, uAnswerProgress);
+          vAnswer = mix(from.z, to.z, uAnswerProgress);
+          gl_Position.xy = mix(gl_Position.xy, glyph * gl_Position.w, vAnswer);
+          float diameter = mix(from.z == 0.0 ? to.w : from.w,
+            to.z == 0.0 ? from.w : to.w, uAnswerProgress);
+          gl_PointSize = mix(gl_PointSize, uDPR * diameter, vAnswer);
+          vOpacity = mix(vOpacity, 1.0, vAnswer);
+        }
+      }
     }
   `;
 
@@ -134,6 +163,8 @@
     uniform float uTime;
     varying vec4 vRandom;
     varying float vScale;
+    varying float vAnswer;
+    varying float vOpacity;
 
     vec3 softLight(vec3 base, float shade) {
       vec3 darker = base - (1.0 - 2.0 * shade) * base * (1.0 - base);
@@ -150,7 +181,8 @@
 
     void main() {
       vec2 pixel = gl_PointCoord - 0.5;
-      if (dot(pixel, pixel) > 0.25 || vScale < 0.1) discard;
+      float radius = dot(pixel, pixel);
+      if (radius > 0.25 || (vScale < 0.1 && vAnswer < 0.05) || vOpacity < 0.015) discard;
       float angle = sin(uTime + vRandom.z * 20.0) * 0.5 + 1.0;
       float sine = sin(angle);
       float cosine = cos(angle);
@@ -160,7 +192,8 @@
       float sparkle = 0.5 + (0.4 + sin(uTime * 4.0 + vRandom.y * 20.0)) * pow(vRandom.z, 10.0) * 2.5;
       color = mix(color, softLight(color, shade), 0.8);
       color = mix(color, overlay(color, shade), 0.2);
-      gl_FragColor = vec4(max(vec3(0.0), color * sparkle), 1.0);
+      vec3 glyph = mix(vec3(0.66, 0.48, 1.0), vec3(1.0, 0.96, 1.0), step(0.2, vRandom.x));
+      gl_FragColor = vec4(mix(max(vec3(0.0), color * sparkle), glyph, vAnswer), vOpacity);
     }
   `;
 
@@ -239,6 +272,12 @@
       this.particleUniforms = {
         uMatcap: { value: this.matcap },
         uPosition: { value: this.origin },
+        uAnswerFrom: { value: this.zero },
+        uAnswerTo: { value: this.zero },
+        uAnswerProgress: { value: 0 },
+        uAnswerFocus: { value: 0 },
+        uAnswerSize: { value: 128 },
+        uParticleSize: { value: this.size },
         uTime: { value: 0 },
         uDPR: { value: renderer.getPixelRatio() }
       };
@@ -267,6 +306,54 @@
 
     resize(pixelRatio) {
       this.particleUniforms.uDPR.value = pixelRatio;
+    }
+
+    answerProgress(timeSeconds) {
+      const progress = THREE.MathUtils.clamp((timeSeconds - this.answerStarted) / 0.34, 0, 1);
+      return progress * (2 - progress);
+    }
+
+    setAnswer(points, timeSeconds) {
+      const uniforms = this.particleUniforms;
+      const side = uniforms.uAnswerSize.value;
+      if (!this.answerTo) {
+        if (points.length === 0) return;
+        this.answerFrom = floatTexture(new Float32Array(side * side * 4), side);
+        this.answerTo = floatTexture(new Float32Array(side * side * 4), side);
+        uniforms.uAnswerFrom.value = this.answerFrom;
+        uniforms.uAnswerTo.value = this.answerTo;
+        this.answerStarted = timeSeconds;
+        this.answerFromFocus = this.answerToFocus = 0;
+      }
+
+      const progress = this.answerProgress(timeSeconds);
+      const from = this.answerFrom.image.data;
+      const to = this.answerTo.image.data;
+      const pointCount = Math.min(points.length, side * side);
+      const lerp = THREE.MathUtils.lerp;
+      for (let index = 0; index < side * side; index++) {
+        const offset = index * 4;
+        const before = from[offset + 2];
+        const after = to[offset + 2];
+        for (let axis = 0; axis < 2; axis++) {
+          const oldValue = from[offset + axis];
+          const newValue = to[offset + axis];
+          from[offset + axis] = before === 0 ? newValue : after === 0 ? oldValue : lerp(oldValue, newValue, progress);
+        }
+        const oldDiameter = from[offset + 3];
+        const newDiameter = to[offset + 3];
+        from[offset + 3] = before === 0 ? newDiameter : after === 0 ? oldDiameter : lerp(oldDiameter, newDiameter, progress);
+        from[offset + 2] = lerp(before, after, progress);
+        const point = index < pointCount ? points[index] : null;
+        to[offset] = point ? point[0] : 0;
+        to[offset + 1] = point ? point[1] : 0;
+        to[offset + 2] = point ? 1 : 0;
+        to[offset + 3] = point ? point[2] : 0;
+      }
+      this.answerFromFocus = lerp(this.answerFromFocus, this.answerToFocus, progress);
+      this.answerToFocus = pointCount ? 1 : 0;
+      this.answerStarted = timeSeconds;
+      this.answerFrom.needsUpdate = this.answerTo.needsUpdate = true;
     }
 
     step(timeSeconds, hz, camera, fluidVelocity, fluidDensity) {
@@ -299,6 +386,11 @@
       this.writeIndex = 1 - this.writeIndex;
       this.particleUniforms.uPosition.value = this.current;
       this.particleUniforms.uTime.value = timeSeconds;
+      if (this.answerTo) {
+        const progress = this.answerProgress(timeSeconds);
+        this.particleUniforms.uAnswerProgress.value = progress;
+        this.particleUniforms.uAnswerFocus.value = THREE.MathUtils.lerp(this.answerFromFocus, this.answerToFocus, progress);
+      }
     }
 
     dispose() {
@@ -310,6 +402,8 @@
       this.origin.dispose();
       this.randomTexture.dispose();
       this.zero.dispose();
+      this.answerFrom?.dispose();
+      this.answerTo?.dispose();
       this.matcap.dispose();
       for (const target of this.targets) target.dispose();
     }

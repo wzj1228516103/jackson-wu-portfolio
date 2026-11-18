@@ -1,4 +1,5 @@
 import { t } from "./localize.mjs";
+import { createAnswerLayout } from "./answer-layout.mjs";
 
 (() => {
   const webglCanvas = document.querySelector("#bg");
@@ -7,6 +8,8 @@ import { t } from "./localize.mjs";
   const drawAscii = window.createAxonAscii?.(document.querySelector("#gradient-ascii"));
   const compact = matchMedia("(max-width: 800px)");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const answerRegion = document.querySelector("[data-chat-answer-region]");
+  const textRaster = createAnswerLayout(answerRegion, webglCanvas);
 
   function createWebGL(canvas) {
     if (!window.THREE || !window.AxonFluid || !window.AxonParticles) return null;
@@ -76,7 +79,11 @@ import { t } from "./localize.mjs";
       renderer.dispose();
     }
 
-    return { canvas, resize, draw, dispose };
+    function setAnswer(points, time) {
+      particles.setAnswer(points, time);
+    }
+
+    return { canvas, resize, draw, dispose, setAnswer };
   }
 
   const pointer = {x: 0, y: 0, active: false};
@@ -88,6 +95,121 @@ import { t } from "./localize.mjs";
   let dirty = true;
   let tryWebGL = true;
   let unavailable = false;
+  let answerText = "";
+  let answerDirty = false;
+  let answerLayout = null;
+  let pageIndex = 0;
+  let pageSince = null;
+  let followPages = true;
+  let lastLayout = -Infinity;
+  let paintedKey = "";
+  let particlesFormingText = false;
+  let expectingParticles = false;
+  let layoutFailed = false;
+  let renderedAnswer = { active: false, page: 0, pageCount: 0 };
+
+  function reportAnswer(active, page = 0, pageCount = 0, force = false) {
+    if (!force && renderedAnswer.active === active && renderedAnswer.page === page &&
+        renderedAnswer.pageCount === pageCount) return;
+    renderedAnswer = { active, page, pageCount };
+    window.dispatchEvent(new CustomEvent("portfolio:answer-rendered", { detail: renderedAnswer }));
+  }
+
+  function canRenderAnswer() {
+    return !!(textRaster && engine?.canvas === webglCanvas &&
+      !paused && !reduced.matches && visible && !document.hidden);
+  }
+
+  function invalidateLayout() {
+    answerDirty = true;
+    lastLayout = -Infinity;
+    paintedKey = "";
+    layoutFailed = false;
+  }
+
+  function hideAnswer() {
+    if (particlesFormingText) engine?.setAnswer?.([], elapsed);
+    particlesFormingText = false;
+    paintedKey = "";
+    const force = expectingParticles && !renderedAnswer.active;
+    expectingParticles = false;
+    reportAnswer(false, 0, 0, force);
+  }
+
+  window.portfolioParticles = {
+    setAnswer(text) {
+      if (typeof text !== "string" || !text.trim()) {
+        this.clearAnswer();
+        return false;
+      }
+      if (!answerText) {
+        pageIndex = 0;
+        pageSince = null;
+        followPages = true;
+        invalidateLayout();
+      }
+      if (answerText !== text) {
+        answerText = text;
+        answerDirty = true;
+      }
+      if (!visible) {
+        const rect = webglCanvas.getBoundingClientRect();
+        visible = rect.top < innerHeight && rect.bottom > 0 && rect.width > 0;
+        if (visible) syncMotion();
+      }
+      expectingParticles = canRenderAnswer() && !layoutFailed;
+      return expectingParticles;
+    },
+    clearAnswer() {
+      answerText = "";
+      answerLayout = null;
+      answerDirty = false;
+      hideAnswer();
+    },
+    setPage(page) {
+      if (!Number.isInteger(page) || page < 1 || page > (answerLayout?.pages.length ?? 0)) return;
+      followPages = false;
+      pageIndex = page - 1;
+    }
+  };
+
+  function updateAnswer(now) {
+    if (!answerText || !canRenderAnswer()) return;
+    if (answerDirty && now - lastLayout >= 85) {
+      answerLayout = textRaster.layout(answerText);
+      lastLayout = now;
+      answerDirty = false;
+    }
+    const pages = answerLayout?.pages;
+    if (!pages?.length) {
+      layoutFailed = true;
+      hideAnswer();
+      return;
+    }
+
+    pageIndex = Math.min(pageIndex, pages.length - 1);
+    pageSince ??= now;
+    const dwell = Math.max(2100, pages[pageIndex].join("").length * 28);
+    if (followPages && pageIndex < pages.length - 1 && now - pageSince >= dwell) {
+      pageIndex += 1;
+      pageSince = now;
+    }
+
+    const key = [pageIndex, ...pages[pageIndex]].join("\n");
+    if (key !== paintedKey) {
+      const points = textRaster.sample(answerLayout, pageIndex);
+      if (!points.length) {
+        layoutFailed = true;
+        hideAnswer();
+        return;
+      }
+      engine.setAnswer(points, elapsed);
+      particlesFormingText = true;
+      layoutFailed = false;
+      paintedKey = key;
+    }
+    reportAnswer(true, pageIndex + 1, pages.length);
+  }
 
   function track(point, restart) {
     if (frameId === undefined || !size) return;
@@ -121,6 +243,7 @@ import { t } from "./localize.mjs";
     engine = undefined;
     previousEngine.canvas.classList.remove("is-rendering");
     try { previousEngine.dispose(); } catch { /* The WebGL context may already be gone. */ }
+    hideAnswer();
     dirty = true;
     syncMotion();
   }
@@ -139,9 +262,11 @@ import { t } from "./localize.mjs";
           mobile: compact.matches
         };
         engine.resize(size);
+        invalidateLayout();
         pointer.active = previous.active = false;
         dirty = false;
       }
+      updateAnswer(now);
       if (engine.draw(now, elapsed, delta, pointer, getBrush())) engine.canvas.classList.add("is-rendering");
     } catch {
       if (engine.canvas === webglCanvas) fallBack();
@@ -160,10 +285,16 @@ import { t } from "./localize.mjs";
   }
 
   function syncMotion() {
+    button.dataset.motionPaused = String(paused);
     if (unavailable) return;
     button.textContent = t(paused ? "启用动效" : "暂停动效");
     if (paused || !visible || document.hidden) {
       stopFrame();
+      if (particlesFormingText || expectingParticles) {
+        engine.canvas.classList.remove("is-rendering");
+        hideAnswer();
+        pageSince = null;
+      }
       return;
     }
 
@@ -195,6 +326,9 @@ import { t } from "./localize.mjs";
     syncMotion();
   });
   addEventListener("resize", () => { dirty = true; }, {passive: true});
+  const resizeObserver = new ResizeObserver(() => { dirty = true; });
+  resizeObserver.observe(webglCanvas);
+  if (answerRegion) resizeObserver.observe(answerRegion);
   addEventListener("pointermove", event => {
     if (event.isPrimary && event.pointerType !== "touch") track(event, false);
   }, {passive: true});
