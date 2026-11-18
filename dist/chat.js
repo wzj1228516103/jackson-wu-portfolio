@@ -1,5 +1,5 @@
 import { locale } from "./localize.mjs";
-import translations from "./chat-copy.mjs?v=scene-chat";
+import translations from "./chat-copy.mjs?v=glyph-chat";
 
 const copy = translations[locale] ?? translations["zh-CN"];
 const requestLimitCodes = new Set(["rate_limited", "daily_limit", "busy"]);
@@ -49,6 +49,144 @@ async function readEvents(response, handleEvent) {
   }
 }
 
+function createAnswerOutput() {
+  const output = document.querySelector("[data-chat-answer-output]");
+  const frontier = output.querySelector("[data-chat-frontier]");
+  const completed = document.createTextNode("");
+  output.querySelector("[data-chat-finished]").append(completed);
+  const announcement = document.querySelector("[data-chat-announcement]");
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const segmenter = typeof Intl.Segmenter === "function"
+    ? new Intl.Segmenter(locale, { granularity: "grapheme" })
+    : null;
+  let pending = [];
+  let cursor = 0;
+  let tail = "";
+  let tailTimer;
+  let glyphTimer;
+  let activeGlyph;
+  let ended = false;
+
+  function followEnd(update) {
+    const follow = output.scrollHeight - output.clientHeight - output.scrollTop < 42;
+    update();
+    if (follow) output.scrollTop = output.scrollHeight;
+  }
+
+  function reset() {
+    clearTimeout(tailTimer);
+    clearTimeout(glyphTimer);
+    tailTimer = glyphTimer = activeGlyph = undefined;
+    ended = false;
+    pending = [];
+    cursor = 0;
+    tail = "";
+    completed.data = "";
+    frontier.textContent = "";
+    announcement.textContent = "";
+    output.scrollTop = 0;
+    window.portfolioParticles?.clearGlyph?.();
+  }
+
+  function pump() {
+    if (activeGlyph) return;
+    const particles = window.portfolioParticles;
+    while (cursor < pending.length) {
+      const waiting = pending.length - cursor;
+      const duration = waiting > 120 ? 22 : waiting > 35 ? 28 : waiting > 8 ? 34 : 43;
+      if (reduced.matches || !particles?.setGlyph || particles.canRenderGlyphs?.() === false) {
+        const value = pending.slice(cursor).join("");
+        followEnd(() => completed.appendData(value));
+        break;
+      }
+
+      const glyph = pending[cursor++];
+      if (!glyph.trim()) {
+        followEnd(() => completed.appendData(glyph));
+        continue;
+      }
+
+      followEnd(() => { frontier.textContent = glyph; });
+      const started = performance.now();
+      const reveal = () => {
+        if (activeGlyph !== reveal) return;
+        glyphTimer = activeGlyph = undefined;
+        followEnd(() => {
+          completed.appendData(glyph);
+          frontier.textContent = "";
+        });
+        particles.clearGlyph?.();
+        pump();
+      };
+      activeGlyph = reveal;
+      if (particles.setGlyph(glyph, frontier, duration, painted => {
+        if (activeGlyph !== reveal) return;
+        clearTimeout(glyphTimer);
+        const delay = painted ? Math.max(16, duration - (performance.now() - started)) : 0;
+        glyphTimer = setTimeout(reveal, delay);
+      })) {
+        glyphTimer ??= setTimeout(reveal, 130);
+        return;
+      }
+      activeGlyph = undefined;
+
+      followEnd(() => {
+        completed.appendData(glyph);
+        frontier.textContent = "";
+      });
+    }
+    pending = [];
+    cursor = 0;
+    if (ended && completed.length) announcement.textContent = completed.data;
+  }
+
+  function flushTail() {
+    clearTimeout(tailTimer);
+    tailTimer = undefined;
+    if (tail) pending.push(tail);
+    tail = "";
+    pump();
+  }
+
+  function write(text) {
+    if (!text) return;
+    if (output.hidden && text.trim()) {
+      document.body.dataset.answerActive = "";
+      output.hidden = false;
+      window.portfolioParticles?.beginAnswer?.();
+    }
+    if (!tail && pending.length > cursor) tail = pending.pop();
+    const unread = tail + text;
+    const segments = segmenter
+      ? Array.from(segmenter.segment(unread), ({ segment }) => segment)
+      : unread.match(/\p{Regional_Indicator}{2}|\P{M}\p{M}*\p{Emoji_Modifier}?(?:\u200D\P{M}\p{M}*\p{Emoji_Modifier}?)*\u200D?|\p{M}+/gu) ?? [];
+    tail = segments.pop() ?? "";
+    for (const segment of segments) pending.push(segment);
+    clearTimeout(tailTimer);
+    tailTimer = setTimeout(flushTail, 52);
+    pump();
+  }
+
+  return {
+    get visible() { return !output.hidden; },
+    write,
+    finish() {
+      ended = true;
+      flushTail();
+    },
+    replace(text) {
+      reset();
+      write(text);
+    },
+    clear() {
+      reset();
+      output.hidden = true;
+      delete document.body.dataset.answerActive;
+      window.portfolioParticles?.clearAnswer?.();
+    }
+  };
+}
+
 function enableChat(footer, endpoint) {
   const form = footer.querySelector("[data-chat-entry]");
   const input = form.querySelector("input");
@@ -56,19 +194,12 @@ function enableChat(footer, endpoint) {
   const stop = form.querySelector("[data-chat-stop]");
   const retry = form.querySelector("[data-chat-retry]");
   const clear = form.querySelector("[data-chat-clear]");
-  const pager = form.querySelector("[data-chat-pager]");
-  const pageLabel = form.querySelector("[data-chat-page]");
-  const previous = form.querySelector("[data-chat-prev]");
-  const next = form.querySelector("[data-chat-next]");
   const status = form.querySelector("[data-chat-status]");
-  const fallback = document.querySelector("[data-chat-answer-fallback]");
-  const announcement = document.querySelector("[data-chat-announcement]");
   const compact = matchMedia("(max-width: 800px)");
+  const answer = createAnswerOutput();
   let sessionId;
   let activeRequest;
   let retryQuestion;
-  let answer = "";
-  let page = 0;
 
   for (const element of footer.querySelectorAll("[data-chat-copy]")) {
     element.textContent = copy[element.dataset.chatCopy];
@@ -88,51 +219,13 @@ function enableChat(footer, endpoint) {
     retry.hidden = busy || !retryQuestion || Boolean(input.value.trim());
   }
 
-  function showFallback(active) {
-    fallback.hidden = active || !answer;
-    const text = fallback.hidden ? "" : answer;
-    if (fallback.textContent !== text) {
-      const follow = fallback.scrollHeight - fallback.clientHeight - fallback.scrollTop < 40;
-      fallback.textContent = text;
-      if (follow) fallback.scrollTop = fallback.scrollHeight;
-    }
-    if (!active) pager.hidden = true;
-  }
-
-  function showAnswer(text) {
-    answer = text;
-    document.body.dataset.answerActive = "";
-    clear.hidden = false;
-    showFallback(Boolean(window.portfolioParticles?.setAnswer(text)));
-  }
-
-  function clearAnswer() {
-    answer = "";
-    delete document.body.dataset.answerActive;
-    window.portfolioParticles?.clearAnswer();
-    clear.hidden = true;
-    announcement.textContent = "";
-    showFallback(false);
-  }
-
-  window.addEventListener("portfolio:answer-rendered", ({ detail }) => {
-    const active = Boolean(detail?.active && answer);
-    showFallback(active);
-    if (!active) return;
-    const count = detail.pageCount;
-    page = detail.page;
-    pager.hidden = count <= 1;
-    pageLabel.textContent = count > 1 ? page + " / " + count : "";
-    previous.disabled = page <= 1;
-    next.disabled = page >= count;
-  });
-
   async function answerQuestion(question) {
     const controller = new AbortController();
     const request = { controller, dismissed: false };
     activeRequest = request;
     retryQuestion = undefined;
-    clearAnswer();
+    answer.clear();
+    clear.hidden = true;
     status.textContent = copy.waiting;
     syncActions();
 
@@ -162,25 +255,26 @@ function enableChat(footer, endpoint) {
         }
         if (!controller.signal.aborted && typeof event.text === "string") {
           streamed += event.text;
-          if (streamed.trim()) showAnswer(streamed);
+          answer.write(event.text);
+          clear.hidden = !answer.visible;
         }
       });
       if (controller.signal.aborted) throw new Error("Chat request stopped");
-      if (!streamed.trim() && typeof result.text === "string" && result.text.trim()) {
-        streamed = result.text;
-        showAnswer(streamed);
-      }
-      if (!streamed.trim()) throw new Error("Empty answer");
+      const final = typeof result.text === "string" && result.text.trim() ? result.text : streamed;
+      if (!final.trim()) throw new Error("Empty answer");
+      if (final.startsWith(streamed)) answer.write(final.slice(streamed.length));
+      else answer.replace(final);
+      clear.hidden = !answer.visible;
+      answer.finish();
 
       if (typeof result.sessionId === "string") sessionId = result.sessionId;
       status.textContent = "";
-      announcement.textContent = streamed;
     } catch {
       if (streaming) sessionId = undefined;
       if (!request.dismissed) {
         retryQuestion = question;
         status.textContent = controller.signal.aborted ? copy.stopped : failure;
-        announcement.textContent = answer;
+        answer.finish();
       }
     } finally {
       activeRequest = undefined;
@@ -195,7 +289,8 @@ function enableChat(footer, endpoint) {
     }
     retryQuestion = undefined;
     status.textContent = "";
-    clearAnswer();
+    answer.clear();
+    clear.hidden = true;
     syncActions();
   }
 
@@ -221,10 +316,8 @@ function enableChat(footer, endpoint) {
     if (event.detail === 0) input.focus({ preventScroll: true });
     dismissAnswer();
   });
-  previous.addEventListener("click", () => window.portfolioParticles?.setPage(page - 1));
-  next.addEventListener("click", () => window.portfolioParticles?.setPage(page + 1));
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && answer && !document.querySelector("dialog[open]")) dismissAnswer();
+    if (event.key === "Escape" && answer.visible && !document.querySelector("dialog[open]")) dismissAnswer();
   });
   footer.hidden = false;
 }

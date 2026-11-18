@@ -1,5 +1,5 @@
 import { t } from "./localize.mjs";
-import { createAnswerLayout } from "./answer-layout.mjs";
+import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
 
 (() => {
   const webglCanvas = document.querySelector("#bg");
@@ -9,7 +9,7 @@ import { createAnswerLayout } from "./answer-layout.mjs";
   const compact = matchMedia("(max-width: 800px)");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const answerRegion = document.querySelector("[data-chat-answer-region]");
-  const textRaster = createAnswerLayout(answerRegion, webglCanvas);
+  const rasterGlyph = createGlyphRaster(webglCanvas);
 
   function createWebGL(canvas) {
     if (!window.THREE || !window.AxonFluid || !window.AxonParticles) return null;
@@ -79,11 +79,12 @@ import { createAnswerLayout } from "./answer-layout.mjs";
       renderer.dispose();
     }
 
-    function setAnswer(points, time) {
-      particles.setAnswer(points, time);
-    }
-
-    return { canvas, resize, draw, dispose, setAnswer };
+    return {
+      canvas, resize, draw, dispose,
+      setGlyph: (points, startTime, duration) => particles.setGlyph(points, startTime, duration),
+      clearGlyph: () => particles?.clearGlyph(),
+      setAnswerMode: active => particles?.setAnswerMode(active)
+    };
   }
 
   const pointer = {x: 0, y: 0, active: false};
@@ -95,120 +96,78 @@ import { createAnswerLayout } from "./answer-layout.mjs";
   let dirty = true;
   let tryWebGL = true;
   let unavailable = false;
-  let answerText = "";
-  let answerDirty = false;
-  let answerLayout = null;
-  let pageIndex = 0;
-  let pageSince = null;
-  let followPages = true;
-  let lastLayout = -Infinity;
-  let paintedKey = "";
-  let particlesFormingText = false;
-  let expectingParticles = false;
-  let layoutFailed = false;
-  let renderedAnswer = { active: false, page: 0, pageCount: 0 };
+  let answerMode = false;
+  let glyph, glyphDirty;
 
-  function reportAnswer(active, page = 0, pageCount = 0, force = false) {
-    if (!force && renderedAnswer.active === active && renderedAnswer.page === page &&
-        renderedAnswer.pageCount === pageCount) return;
-    renderedAnswer = { active, page, pageCount };
-    window.dispatchEvent(new CustomEvent("portfolio:answer-rendered", { detail: renderedAnswer }));
+  function acknowledgeGlyph(rendered) {
+    const onDrawn = glyph?.onDrawn;
+    if (!onDrawn) return;
+    glyph.onDrawn = undefined;
+    queueMicrotask(() => onDrawn(rendered));
   }
 
-  function canRenderAnswer() {
-    return !!(textRaster && engine?.canvas === webglCanvas &&
-      !paused && !reduced.matches && visible && !document.hidden);
+  function clearGlyph() {
+    glyph = null;
+    glyphDirty = false;
+    engine?.clearGlyph?.();
   }
 
-  function invalidateLayout() {
-    answerDirty = true;
-    lastLayout = -Infinity;
-    paintedKey = "";
-    layoutFailed = false;
+  function beginAnswer() {
+    answerMode = true;
+    engine?.setAnswerMode?.(true);
   }
 
-  function hideAnswer() {
-    if (particlesFormingText) engine?.setAnswer?.([], elapsed);
-    particlesFormingText = false;
-    paintedKey = "";
-    const force = expectingParticles && !renderedAnswer.active;
-    expectingParticles = false;
-    reportAnswer(false, 0, 0, force);
+  function canRenderGlyphs() {
+    return !!(rasterGlyph && tryWebGL && !unavailable && !paused &&
+      !reduced.matches && engine?.canvas !== canvas2d);
   }
 
   window.portfolioParticles = {
-    setAnswer(text) {
-      if (typeof text !== "string" || !text.trim()) {
-        this.clearAnswer();
-        return false;
-      }
-      if (!answerText) {
-        pageIndex = 0;
-        pageSince = null;
-        followPages = true;
-        invalidateLayout();
-      }
-      if (answerText !== text) {
-        answerText = text;
-        answerDirty = true;
-      }
+    beginAnswer,
+    canRenderGlyphs,
+    setGlyph(text, anchor, duration = 64, onDrawn) {
       if (!visible) {
         const rect = webglCanvas.getBoundingClientRect();
         visible = rect.top < innerHeight && rect.bottom > 0 && rect.width > 0;
         if (visible) syncMotion();
       }
-      expectingParticles = canRenderAnswer() && !layoutFailed;
-      return expectingParticles;
+      beginAnswer();
+      if (!canRenderGlyphs() || engine?.canvas !== webglCanvas || !visible ||
+          document.hidden || typeof text !== "string" || !text.trim() || !anchor?.isConnected) {
+        clearGlyph();
+        return false;
+      }
+      glyph = { text, anchor, duration: Math.max(20, duration), startedAt: performance.now(), onDrawn };
+      glyphDirty = true;
+      return true;
     },
+    clearGlyph,
     clearAnswer() {
-      answerText = "";
-      answerLayout = null;
-      answerDirty = false;
-      hideAnswer();
-    },
-    setPage(page) {
-      if (!Number.isInteger(page) || page < 1 || page > (answerLayout?.pages.length ?? 0)) return;
-      followPages = false;
-      pageIndex = page - 1;
+      answerMode = false;
+      clearGlyph();
+      engine?.setAnswerMode?.(false);
     }
   };
 
-  function updateAnswer(now) {
-    if (!answerText || !canRenderAnswer()) return;
-    if (answerDirty && now - lastLayout >= 85) {
-      answerLayout = textRaster.layout(answerText);
-      lastLayout = now;
-      answerDirty = false;
-    }
-    const pages = answerLayout?.pages;
-    if (!pages?.length) {
-      layoutFailed = true;
-      hideAnswer();
+  function updateGlyph(now) {
+    if (!glyph) return;
+    if (!glyph.anchor.isConnected) {
+      acknowledgeGlyph(false);
+      clearGlyph();
       return;
     }
-
-    pageIndex = Math.min(pageIndex, pages.length - 1);
-    pageSince ??= now;
-    const dwell = Math.max(2100, pages[pageIndex].join("").length * 28);
-    if (followPages && pageIndex < pages.length - 1 && now - pageSince >= dwell) {
-      pageIndex += 1;
-      pageSince = now;
+    if (!glyphDirty) return;
+    glyphDirty = false;
+    const points = rasterGlyph(glyph.text, glyph.anchor);
+    if (!points.length) {
+      acknowledgeGlyph(false);
+      engine.clearGlyph();
+      return;
     }
-
-    const key = [pageIndex, ...pages[pageIndex]].join("\n");
-    if (key !== paintedKey) {
-      const points = textRaster.sample(answerLayout, pageIndex);
-      if (!points.length) {
-        layoutFailed = true;
-        hideAnswer();
-        return;
-      }
-      engine.setAnswer(points, elapsed);
-      particlesFormingText = true;
-      layoutFailed = false;
-      paintedKey = key;
-    }
-    reportAnswer(true, pageIndex + 1, pages.length);
+    const lead = Math.min(14, glyph.duration * 0.38);
+    const timeInFlight = Math.max(0, now - glyph.startedAt) + lead;
+    engine.setGlyph(points, elapsed - timeInFlight / 1000, glyph.duration / 1000);
+    return true;
   }
 
   function track(point, restart) {
@@ -243,7 +202,8 @@ import { createAnswerLayout } from "./answer-layout.mjs";
     engine = undefined;
     previousEngine.canvas.classList.remove("is-rendering");
     try { previousEngine.dispose(); } catch { /* The WebGL context may already be gone. */ }
-    hideAnswer();
+    acknowledgeGlyph(false);
+    clearGlyph();
     dirty = true;
     syncMotion();
   }
@@ -262,12 +222,14 @@ import { createAnswerLayout } from "./answer-layout.mjs";
           mobile: compact.matches
         };
         engine.resize(size);
-        invalidateLayout();
+        engine.setAnswerMode?.(answerMode);
+        glyphDirty = true;
         pointer.active = previous.active = false;
         dirty = false;
       }
-      updateAnswer(now);
+      const glyphDrawn = updateGlyph(now);
       if (engine.draw(now, elapsed, delta, pointer, getBrush())) engine.canvas.classList.add("is-rendering");
+      if (glyphDrawn) acknowledgeGlyph(true);
     } catch {
       if (engine.canvas === webglCanvas) fallBack();
       else {
@@ -290,10 +252,10 @@ import { createAnswerLayout } from "./answer-layout.mjs";
     button.textContent = t(paused ? "启用动效" : "暂停动效");
     if (paused || !visible || document.hidden) {
       stopFrame();
-      if (particlesFormingText || expectingParticles) {
-        engine.canvas.classList.remove("is-rendering");
-        hideAnswer();
-        pageSince = null;
+      if (answerMode) {
+        engine?.canvas.classList.remove("is-rendering");
+        acknowledgeGlyph(false);
+        clearGlyph();
       }
       return;
     }
@@ -329,6 +291,7 @@ import { createAnswerLayout } from "./answer-layout.mjs";
   const resizeObserver = new ResizeObserver(() => { dirty = true; });
   resizeObserver.observe(webglCanvas);
   if (answerRegion) resizeObserver.observe(answerRegion);
+  addEventListener("scroll", () => { glyphDirty = true; }, {passive: true, capture: true});
   addEventListener("pointermove", event => {
     if (event.isPrimary && event.pointerType !== "touch") track(event, false);
   }, {passive: true});

@@ -2,6 +2,7 @@
   "use strict";
 
   const THREE = window.THREE;
+  const glyphTextureSize = 64;
   const matcapUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAAAAACPAi4CAAAFH0lEQVR42oWX6XIcNwyEcXFmtXJs2Y7fPg+YKicuq2LJexDd+UFyjtU6Ye0xmhU+NkAQxOgfJDiGbL7ED64qBPJ6ui53b9+xWq8E4XQsbqYiJAHUvF5eznchQb4lfJyLu6mqsAEysx4v529vBGwUyPj2p3kKdzUVESEIAJl1mubD6fv11ou49f/3h6lEn1/YAYmM6hFl+vnXLwEUku/fHbq9iQqFCyC9jXh53gOwiKfwy3GeSoTbXgAMZqZmZmYeX98o6Ij508NhKtEd2AqwVFM1VVU1tW+nWxeEJB+fjvM0RYSNCPQ1gEIVoiqqIiLy6fnHAIxlFPLd03GepxLubqYqmxBqqqaoigrbff5DCikLgPL4dDzMU4kWARMRIWlQVU1NkW7ZUoP5o9kvgPnDw2GepigeZmYyQqjaZQ9Ad+v95UwREQm0mx8f5mkqXcDwAMphT5L0FZBPfzZoNFFfHuapRIkIH0kkpIJjbnaXnIQHkPn57w3g/XGeSps/zKxnMdliZjSSqkYazRzuHuXw+LICHqeplHB3dxtrICQFqmqdQDaAOdyjTMcXEREjwc/zFOHubtYioO1TVW1JoJFFLR3dY/qtA+iHYe+m1ozGENHdsAHxKAfrgA9Tn942ttLf69dOhJtHeeiAOdzN1IZWkfaSngEqd4SYmU8N8LG4N+3tH+XeGIgBMjP3chAxcnJftYtwZN1yuSBEZOuQe4gYp5Z7Qy+XFOhpcEeLDDfCJfjQFl5HwnFI2JT5xVjbZ3PIzEoGi6uu85O6AXRjUrj6tEhQM5egj+3ShcOEuu68LmRLWPWYSSzVp1UwhUGV2v98Q1ghqiJqFrMu6mFQGEWGfasdG8KNCFWNcF3cJRTt9ihcuCG0MthC00AWo16AMEIJ6TVkFC/uTs+xSt0n1dBleoOKiu4BBAlgUGQ5f6UTgkISBAFVhaj0RV0LIG9UDJZQtBVVEIRB2wa6BdyzXpMk+uwA2nIae14tiQACuKcEJCWyOTgALcl2udh/X+MxqKQIIzFGj52a7KI4JKyhxAIVMq4AgDRkm9SUw4W9hDHteAEgBXGqmUjLoXxVsAtjM8ByCQAQssalZqYDSN0rEO5TYSA2BBII1sxMU9Xug26i+AawHSkkJHg+lEwbMTC26qKbw3ive7EHiZTgy2ONXE8z5Vpf9uuwWgKZmQR4leD5UmJzmhlHZefGh97sITPbRzYBKUE5TVtAj8GaCYJ2oDPb5N0+AaCKhPDboawn+i1A3iroOgjg1DqUUzFrTZnvAdtMwDp5bQKI2luc75M3F5xOmN6L4haQWSuJzFMHXF7dmgNOM9h/A2rWWgEgK0aT9XfpnT3NrDVmondcSGTWrFlBZObr0qXJD+8hNGuthejtOo4Y1qzXdn2RFfAcqsJCeAfslmFJ5eZBs6/X8wbAryYkA/AdYLuM2QEVSGStr0ubRyHlm/a+dvVhu51AJBJZs7KF4qdsASLX7wQQMQB6o2BZxBb/es4tQETkxPcA0FulviFHDMAeQrT419NFVkC/Oj9nZvEwV7upi8tTCwkkaj0v9hLrWXl5zqwlfRuFDmg7iS2Wtf7M9YCNzXmfz9fWMfaFWEr7OBnaE+D1ddskxK7/ec1rKa1nMtENYKxFZl7O8muAnM/H6r3j123fMh5e6utNzxW3TdirHXIThTWhAaCeIP8HELzKIVxtW9naU0493en64l5behJvz95tS7E9wufdFvYuQCRTxKI/+hAV8qvxLymYe1EUYypWAAAAAElFTkSuQmCC";
 
   const fullscreenVertex = `
@@ -113,17 +114,29 @@
   const pointVertex = `
     attribute vec4 random;
     uniform sampler2D uPosition;
-    uniform sampler2D uAnswerFrom;
-    uniform sampler2D uAnswerTo;
-    uniform float uAnswerProgress;
+    uniform sampler2D uGlyphPoints;
+    uniform sampler2D uFlowVelocity;
+    uniform sampler2D uFlowDensity;
+    uniform float uGlyphProgress;
     uniform float uAnswerFocus;
-    uniform float uAnswerSize;
+    uniform float uGlyphTextureSize;
     uniform float uParticleSize;
     uniform float uDPR;
+    uniform vec2 uPixelToClip;
     varying vec4 vRandom;
     varying float vScale;
     varying float vAnswer;
     varying float vOpacity;
+
+    vec2 glyphDrift(vec2 glyph) {
+      vec2 uv = glyph * 0.5 + 0.5;
+      float contact = smoothstep(0.015, 0.28, texture2D(uFlowDensity, uv).r);
+      vec2 flow = texture2D(uFlowVelocity, uv).xy;
+      vec2 curl = vec2(-flow.y, flow.x) * (random.y - 0.5) * 0.65;
+      vec2 drift = (flow + curl) * mix(0.62, 1.05, random.x);
+      float cap = mix(18.0, 34.0, random.z);
+      return drift * min(1.0, cap / max(length(drift), 0.001)) * contact * uPixelToClip;
+    }
 
     void main() {
       vec3 pos = texture2D(uPosition, position.xy).xyz;
@@ -137,22 +150,19 @@
       vAnswer = 0.0;
       vOpacity = 1.0 - uAnswerFocus;
 
-      if (uAnswerFocus > 0.0) {
+      if (uGlyphProgress > 0.0) {
         vec2 cell = floor(position.xy * uParticleSize);
         float index = cell.y * uParticleSize + cell.x;
-        if (index < uAnswerSize * uAnswerSize) {
-          vec2 uv = (vec2(mod(index, uAnswerSize), floor(index / uAnswerSize)) + 0.5) / uAnswerSize;
-          vec4 from = texture2D(uAnswerFrom, uv);
-          vec4 to = texture2D(uAnswerTo, uv);
-          vec2 origin = from.z == 0.0 ? to.xy : from.xy;
-          vec2 destination = to.z == 0.0 ? from.xy : to.xy;
-          vec2 glyph = mix(origin, destination, uAnswerProgress);
-          vAnswer = mix(from.z, to.z, uAnswerProgress);
-          gl_Position.xy = mix(gl_Position.xy, glyph * gl_Position.w, vAnswer);
-          float diameter = mix(from.z == 0.0 ? to.w : from.w,
-            to.z == 0.0 ? from.w : to.w, uAnswerProgress);
-          gl_PointSize = mix(gl_PointSize, uDPR * diameter, vAnswer);
-          vOpacity = mix(vOpacity, 1.0, vAnswer);
+        if (index < uGlyphTextureSize * uGlyphTextureSize) {
+          vec2 uv = (vec2(mod(index, uGlyphTextureSize), floor(index / uGlyphTextureSize)) + 0.5) / uGlyphTextureSize;
+          vec4 target = texture2D(uGlyphPoints, uv);
+          if (target.z > 0.0) {
+            vec2 glyph = target.xy + glyphDrift(target.xy);
+            vAnswer = uGlyphProgress;
+            gl_Position.xy = mix(gl_Position.xy, glyph * gl_Position.w, vAnswer);
+            gl_PointSize = mix(gl_PointSize, uDPR * target.w, vAnswer);
+            vOpacity = mix(vOpacity, 1.0, vAnswer);
+          }
         }
       }
     }
@@ -269,17 +279,22 @@
       this.computeCamera = new THREE.Camera();
 
       this.matcap = new THREE.TextureLoader().load(matcapUrl);
+      this.glyphDuration = 0;
+      this.answerFocus = 0;
+      this.answerFocusTarget = 0;
       this.particleUniforms = {
         uMatcap: { value: this.matcap },
         uPosition: { value: this.origin },
-        uAnswerFrom: { value: this.zero },
-        uAnswerTo: { value: this.zero },
-        uAnswerProgress: { value: 0 },
+        uGlyphPoints: { value: this.zero },
+        uFlowVelocity: { value: this.zero },
+        uFlowDensity: { value: this.zero },
+        uGlyphProgress: { value: 0 },
         uAnswerFocus: { value: 0 },
-        uAnswerSize: { value: 128 },
+        uGlyphTextureSize: { value: glyphTextureSize },
         uParticleSize: { value: this.size },
         uTime: { value: 0 },
-        uDPR: { value: renderer.getPixelRatio() }
+        uDPR: { value: renderer.getPixelRatio() },
+        uPixelToClip: { value: new THREE.Vector2() }
       };
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(coordinates, 3));
@@ -306,54 +321,39 @@
 
     resize(pixelRatio) {
       this.particleUniforms.uDPR.value = pixelRatio;
+      const pixelToClip = this.particleUniforms.uPixelToClip.value;
+      this.renderer.getSize(pixelToClip);
+      pixelToClip.set(2 / pixelToClip.x, 2 / pixelToClip.y);
     }
 
-    answerProgress(timeSeconds) {
-      const progress = THREE.MathUtils.clamp((timeSeconds - this.answerStarted) / 0.34, 0, 1);
-      return progress * (2 - progress);
+    setAnswerMode(active) {
+      this.answerFocusTarget = active ? 1 : 0;
     }
 
-    setAnswer(points, timeSeconds) {
-      const uniforms = this.particleUniforms;
-      const side = uniforms.uAnswerSize.value;
-      if (!this.answerTo) {
-        if (points.length === 0) return;
-        this.answerFrom = floatTexture(new Float32Array(side * side * 4), side);
-        this.answerTo = floatTexture(new Float32Array(side * side * 4), side);
-        uniforms.uAnswerFrom.value = this.answerFrom;
-        uniforms.uAnswerTo.value = this.answerTo;
-        this.answerStarted = timeSeconds;
-        this.answerFromFocus = this.answerToFocus = 0;
+    setGlyph(points, startTime, duration) {
+      if (!this.glyphTexture) {
+        this.glyphTexture = floatTexture(new Float32Array(glyphTextureSize ** 2 * 4), glyphTextureSize);
+        this.particleUniforms.uGlyphPoints.value = this.glyphTexture;
       }
-
-      const progress = this.answerProgress(timeSeconds);
-      const from = this.answerFrom.image.data;
-      const to = this.answerTo.image.data;
-      const pointCount = Math.min(points.length, side * side);
-      const lerp = THREE.MathUtils.lerp;
-      for (let index = 0; index < side * side; index++) {
+      const data = this.glyphTexture.image.data;
+      const pointCount = Math.min(points.length, glyphTextureSize ** 2);
+      data.fill(0);
+      for (let index = 0; index < pointCount; index++) {
+        const [x, y] = points[index];
         const offset = index * 4;
-        const before = from[offset + 2];
-        const after = to[offset + 2];
-        for (let axis = 0; axis < 2; axis++) {
-          const oldValue = from[offset + axis];
-          const newValue = to[offset + axis];
-          from[offset + axis] = before === 0 ? newValue : after === 0 ? oldValue : lerp(oldValue, newValue, progress);
-        }
-        const oldDiameter = from[offset + 3];
-        const newDiameter = to[offset + 3];
-        from[offset + 3] = before === 0 ? newDiameter : after === 0 ? oldDiameter : lerp(oldDiameter, newDiameter, progress);
-        from[offset + 2] = lerp(before, after, progress);
-        const point = index < pointCount ? points[index] : null;
-        to[offset] = point ? point[0] : 0;
-        to[offset + 1] = point ? point[1] : 0;
-        to[offset + 2] = point ? 1 : 0;
-        to[offset + 3] = point ? point[2] : 0;
+        data[offset] = x;
+        data[offset + 1] = y;
+        data[offset + 2] = 1;
+        data[offset + 3] = 1.45;
       }
-      this.answerFromFocus = lerp(this.answerFromFocus, this.answerToFocus, progress);
-      this.answerToFocus = pointCount ? 1 : 0;
-      this.answerStarted = timeSeconds;
-      this.answerFrom.needsUpdate = this.answerTo.needsUpdate = true;
+      this.glyphStarted = startTime;
+      this.glyphDuration = duration;
+      this.glyphTexture.needsUpdate = true;
+    }
+
+    clearGlyph() {
+      this.glyphDuration = 0;
+      this.particleUniforms.uGlyphProgress.value = 0;
     }
 
     step(timeSeconds, hz, camera, fluidVelocity, fluidDensity) {
@@ -386,10 +386,14 @@
       this.writeIndex = 1 - this.writeIndex;
       this.particleUniforms.uPosition.value = this.current;
       this.particleUniforms.uTime.value = timeSeconds;
-      if (this.answerTo) {
-        const progress = this.answerProgress(timeSeconds);
-        this.particleUniforms.uAnswerProgress.value = progress;
-        this.particleUniforms.uAnswerFocus.value = THREE.MathUtils.lerp(this.answerFromFocus, this.answerToFocus, progress);
+      const focusDelta = (this.answerFocusTarget - this.answerFocus) * Math.min(hz * 0.18, 1);
+      this.answerFocus += focusDelta;
+      this.particleUniforms.uAnswerFocus.value = this.answerFocus;
+      if (this.glyphDuration) {
+        const progress = THREE.MathUtils.clamp((timeSeconds - this.glyphStarted) / this.glyphDuration, 0, 1);
+        this.particleUniforms.uFlowVelocity.value = this.compute.uVelocity.value;
+        this.particleUniforms.uFlowDensity.value = this.compute.uDensity.value;
+        this.particleUniforms.uGlyphProgress.value = 1 - (1 - progress) ** 4;
       }
     }
 
@@ -402,8 +406,7 @@
       this.origin.dispose();
       this.randomTexture.dispose();
       this.zero.dispose();
-      this.answerFrom?.dispose();
-      this.answerTo?.dispose();
+      this.glyphTexture?.dispose();
       this.matcap.dispose();
       for (const target of this.targets) target.dispose();
     }
