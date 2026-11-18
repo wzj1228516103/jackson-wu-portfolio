@@ -764,3 +764,13 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .001ms !important; scroll-behavior: auto !important; }
 }
+
+
+/* Essays keep their own light typography (author inline styles), so they sit on a paper-like surface. */
+.essay-surface {
+  background: #fbf9f5;
+  color: #333;
+  border-radius: 12px;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+.essay-surface img { max-width: 100%; height: auto; }
