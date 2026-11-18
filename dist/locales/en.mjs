@@ -1,4 +1,8 @@
 export default {
+  "随记": "Notes",
+  "[ 随记 ]": "[ Notes ]",
+  "博客里的记录": "Notes from the blog",
+  "2023 到 2025 年写的五篇记录，从旧博客搬过来：": "Five posts written between 2023 and 2025, migrated from the old blog:",
   "随笔": "Essays",
   "[ 随笔 ]": "[ Essays ]",
   "旧博客里的记录": "Notes from the old blog",

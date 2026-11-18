@@ -19,8 +19,7 @@ import { locale, t } from "./localize.mjs";
       card.hidden = category !== "all" && !card.dataset.category.split(" ").includes(category);
     }
 
-    // Essay cards share the list but are not projects.
-    const total = cards.filter(card => !card.hidden && !card.classList.contains("essay-card")).length;
+    const total = cards.filter(card => !card.hidden).length;
     const message = t("正在展示 {count} 个项目", { count: total });
     count.textContent = String(total).padStart(2, "0");
     count.setAttribute("aria-label", message);
@@ -30,7 +29,7 @@ import { locale, t } from "./localize.mjs";
 
   function highlightLocation() {
     const active = location.hash || "#profile";
-    for (const link of document.querySelectorAll(".profile-nav a, .project-card")) {
+    for (const link of document.querySelectorAll(".profile-nav a, .project-card, .essay-card")) {
       if (link.getAttribute("href") === active) link.setAttribute("aria-current", "location");
       else link.removeAttribute("aria-current");
     }

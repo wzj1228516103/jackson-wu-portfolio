@@ -776,5 +776,17 @@ body::before {
 .essay-surface img { max-width: 100%; height: auto; }
 
 
-/* Group label for the essays inside the project list. */
-.essay-group-label { margin: 18px 0 2px; }
+
+
+/* 随记: cards in the right panel reuse the project card artwork classes. */
+.essay-list { display: grid; gap: 4px; margin-top: 14px; }
+.essay-card {
+  display: block;
+  padding: 13px 0 15px;
+  border-top: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+}
+.essay-card:focus-visible { outline-offset: -2px; }
+.essay-card:hover .project-art, .essay-card[aria-current="location"] .project-art { border-color: var(--art-accent); }
+.essay-card:hover .project-meta, .essay-card[aria-current="location"] .project-meta { color: var(--accent); }
