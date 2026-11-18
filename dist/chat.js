@@ -5,6 +5,7 @@ import { answerPreviewText, renderAnswerMarkdown } from "./answer-markdown.mjs?v
 const copy = translations[locale] ?? translations["zh-CN"];
 const requestLimitCodes = new Set(["rate_limited", "daily_limit", "busy"]);
 const answerIdleMs = 60_000;
+const answerDissolveMs = 4200;
 
 function configuredEndpoint(value) {
   if (!value.trim()) return null;
@@ -51,9 +52,11 @@ async function readEvents(response, handleEvent) {
   }
 }
 
-function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
+function createSettledEffects({ output, revealed, finished, reduced, segment, canIdle, onIdle }) {
   const glyphSelector = "[data-chat-settled-glyph]";
+  let content = revealed;
   let glyphs = [];
+  let indexedLength = 0;
   let idleTimer;
   let dissolving;
   let normalizeQueued = false;
@@ -72,21 +75,29 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
 
   function restore(anchor) {
     delete anchor.dataset.scattered;
+    if ("dissolvingGlyph" in anchor.dataset) {
+      delete anchor.dataset.dissolvingGlyph;
+      anchor.style.removeProperty("--chat-dissolve-delay");
+      anchor.style.removeProperty("--chat-dissolve-duration");
+    }
     if (!anchor.isConnected || hasSelection()) return;
+    const root = content;
+    if (!root.contains(anchor)) return;
     anchor.replaceWith(...anchor.childNodes);
     if (normalizeQueued) return;
     normalizeQueued = true;
     queueMicrotask(() => {
       normalizeQueued = false;
-      if (glyphs.length && !hasSelection()) finished.normalize();
+      if (content === root && glyphs.length && !hasSelection()) root.normalize();
     });
   }
 
   function restoreAll() {
     dissolving = undefined;
     delete output.dataset.dissolving;
+    output.style.removeProperty("--chat-dissolve-ornament-delay");
     window.portfolioParticles?.cancelSettledEffects?.();
-    finished.querySelectorAll(glyphSelector).forEach(restore);
+    content.querySelectorAll(glyphSelector).forEach(restore);
   }
 
   function visibleGlyphs(point) {
@@ -99,7 +110,7 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
     if (top >= bottom || left >= right) return { anchors: [], inserted: [] };
 
     const ranges = [];
-    const walker = document.createTreeWalker(finished, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
     let offset = 0;
     let cursor = 0;
     for (let text = walker.nextNode(); text && cursor < glyphs.length; text = walker.nextNode()) {
@@ -160,7 +171,7 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
   }
 
   function readyToIdle() {
-    return glyphs.length > 0 && !output.hidden && !reduced.matches && !document.hidden &&
+    return content === finished && glyphs.length > 0 && !output.hidden && !reduced.matches && !document.hidden &&
       !output.contains(document.activeElement) && !hasSelection() && canIdle();
   }
 
@@ -171,10 +182,23 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
     restoreAll();
     const group = visibleGlyphs();
     if (!group.anchors?.length) return;
+    const ordered = group.anchors.reverse();
     const current = {};
     dissolving = current;
-    const accepted = particles.dissolveAnswer(group.anchors, 2600, () => {
-      if (dissolving === current) output.dataset.dissolving = "";
+    const accepted = particles.dissolveAnswer(ordered, answerDissolveMs, ({ anchors, startedAt }) => {
+      if (dissolving !== current || !anchors.length) return;
+      const stages = new Map(anchors.map(stage => [stage.anchor, stage]));
+      const last = anchors.at(-1);
+      const elapsed = Math.max(0, performance.now() - startedAt);
+      output.dataset.dissolving = "";
+      const ornamentDelay = Math.max(0, last.delay + last.duration / 2 - elapsed);
+      output.style.setProperty("--chat-dissolve-ornament-delay", ornamentDelay + "ms");
+      for (const anchor of ordered) {
+        const { delay, duration } = stages.get(anchor) ?? last;
+        anchor.style.setProperty("--chat-dissolve-delay", Math.max(-duration, delay - elapsed) + "ms");
+        anchor.style.setProperty("--chat-dissolve-duration", duration + "ms");
+        anchor.dataset.dissolvingGlyph = "";
+      }
     }, complete => {
       if (dissolving !== current) return;
       dissolving = undefined;
@@ -213,7 +237,7 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
   }, { capture: true, passive: true });
   output.addEventListener("scroll", () => {
     if (!glyphs.length) return;
-    restoreAll();
+    if (content === finished) restoreAll();
     noteInteraction();
   }, { capture: true, passive: true });
   output.addEventListener("pointerleave", noteInteraction, { passive: true });
@@ -237,27 +261,34 @@ function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
     noteInteraction();
   });
 
+  function record(text) {
+    for (const glyph of segment(text)) {
+      const end = indexedLength + glyph.length;
+      if (glyph.trim()) glyphs.push({ start: indexedLength, end });
+      indexedLength = end;
+    }
+  }
+
+  function reset() {
+    restoreAll();
+    glyphs = [];
+    indexedLength = 0;
+    lastScan = -Infinity;
+    clearTimeout(idleTimer);
+    content = revealed;
+  }
+
   return {
     noteInteraction,
-    settle(segment) {
-      let offset = 0;
-      glyphs = [];
-      const walker = document.createTreeWalker(finished, NodeFilter.SHOW_TEXT);
-      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        for (const text of segment(node.data)) {
-          const end = offset + text.length;
-          if (text.trim()) glyphs.push({ start: offset, end });
-          offset = end;
-        }
-      }
+    record,
+    settle() {
+      reset();
+      content = finished;
+      const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) record(node.data);
       noteInteraction();
     },
-    reset() {
-      glyphs = [];
-      lastScan = -Infinity;
-      clearTimeout(idleTimer);
-      restoreAll();
-    }
+    reset
   };
 }
 
@@ -267,8 +298,6 @@ function createAnswerOutput(canIdle, onIdle) {
   const revealed = output.querySelector("[data-chat-revealed]");
   const frontier = output.querySelector("[data-chat-frontier]");
   const finished = output.querySelector("[data-chat-markdown]");
-  const completed = document.createTextNode("");
-  revealed.append(completed);
   const announcement = document.querySelector("[data-chat-announcement]");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const segmenter = typeof Intl.Segmenter === "function"
@@ -283,19 +312,33 @@ function createAnswerOutput(canIdle, onIdle) {
   let ended = false;
   let settled = false;
   let preview = "";
+  let completed = "";
   let finalSource = "";
-  const effects = createSettledEffects(output, finished, reduced, canIdle, () => {
-    clear();
-    onIdle();
-  });
   const segment = text => segmenter
     ? Array.from(segmenter.segment(text), ({ segment }) => segment)
     : text.match(/\p{Regional_Indicator}{2}|\P{M}\p{M}*\p{Emoji_Modifier}?(?:\u200D\P{M}\p{M}*\p{Emoji_Modifier}?)*\u200D?|\p{M}+/gu) ?? [];
+
+  const effects = createSettledEffects({
+    output, revealed, finished, reduced, segment, canIdle,
+    onIdle() {
+      clear();
+      onIdle();
+    }
+  });
 
   function followEnd(update) {
     const follow = output.scrollHeight - output.clientHeight - output.scrollTop < 42;
     update();
     if (follow) output.scrollTop = output.scrollHeight;
+    if (!draft.hidden) window.portfolioParticles?.refreshSettledGeometry?.();
+  }
+
+  function appendDraft(value) {
+    completed += value;
+    const last = revealed.lastChild;
+    if (last instanceof Text) last.appendData(value);
+    else revealed.append(value);
+    effects.record(value);
   }
 
   function discardDraftTail() {
@@ -314,7 +357,8 @@ function createAnswerOutput(canIdle, onIdle) {
     discardDraftTail();
     ended = false;
     settled = false;
-    preview = finalSource = completed.data = "";
+    preview = finalSource = completed = "";
+    revealed.replaceChildren();
     finished.replaceChildren();
     finished.hidden = true;
     draft.hidden = false;
@@ -342,10 +386,11 @@ function createAnswerOutput(canIdle, onIdle) {
       finished.replaceChildren(fragment);
       finished.hidden = false;
       draft.hidden = true;
-      completed.data = "";
+      effects.settle();
+      revealed.replaceChildren();
+      completed = "";
     });
     announcement.textContent = finished.innerText.trim();
-    effects.settle(segment);
   }
 
   function pump() {
@@ -356,13 +401,13 @@ function createAnswerOutput(canIdle, onIdle) {
       const duration = waiting > 120 ? 22 : waiting > 35 ? 28 : waiting > 8 ? 34 : 43;
       if (reduced.matches || !particles?.setGlyph || particles.canRenderGlyphs?.() === false) {
         const value = pending.slice(cursor).join("");
-        followEnd(() => completed.appendData(value));
+        followEnd(() => appendDraft(value));
         break;
       }
 
       const glyph = pending[cursor++];
       if (!glyph.trim()) {
-        followEnd(() => completed.appendData(glyph));
+        followEnd(() => appendDraft(glyph));
         continue;
       }
 
@@ -372,7 +417,7 @@ function createAnswerOutput(canIdle, onIdle) {
         if (activeGlyph !== reveal) return;
         glyphTimer = activeGlyph = undefined;
         followEnd(() => {
-          completed.appendData(glyph);
+          appendDraft(glyph);
           frontier.textContent = "";
         });
         particles.clearGlyph?.();
@@ -391,7 +436,7 @@ function createAnswerOutput(canIdle, onIdle) {
       activeGlyph = undefined;
 
       followEnd(() => {
-        completed.appendData(glyph);
+        appendDraft(glyph);
         frontier.textContent = "";
       });
     }
@@ -431,9 +476,14 @@ function createAnswerOutput(canIdle, onIdle) {
       write(next.slice(preview.length));
     } else {
       discardDraftTail();
-      if (!next.startsWith(completed.data)) {
-        const shown = segment(completed.data).length;
-        followEnd(() => { completed.data = segment(next).slice(0, shown).join(""); });
+      if (!next.startsWith(completed)) {
+        const shown = segment(completed).length;
+        followEnd(() => {
+          effects.reset();
+          completed = segment(next).slice(0, shown).join("");
+          revealed.textContent = completed;
+          effects.record(completed);
+        });
       }
       write(next.slice(completed.length));
     }

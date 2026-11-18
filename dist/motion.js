@@ -83,7 +83,7 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
       canvas, resize, draw, dispose,
       setGlyph: (points, startTime, duration) => particles.setGlyph(points, startTime, duration),
       clearGlyph: () => particles?.clearGlyph(),
-      setSettledGlyphs: glyphs => particles.setSettledGlyphs(glyphs),
+      setSettledGlyphs: (glyphs, dissolveTiming) => particles.setSettledGlyphs(glyphs, dissolveTiming),
       setSettledProgress: (now, progress) => particles.setSettledProgress(now, progress),
       clearSettled: returnToOrbit => particles?.clearSettled(returnToOrbit),
       setAnswerMode: active => particles?.setAnswerMode(active)
@@ -103,6 +103,7 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
   let glyph, glyphDirty;
   const scattered = new Map();
   const scatterHold = 650;
+  const dissolveTiming = { wave: 0.56, handoff: 0.09, travel: 0.35 };
   let scatterDirty = false;
   let settledGeometryDirty = false;
   let dissolve;
@@ -185,15 +186,22 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
       scatterDirty = true;
       return true;
     },
-    dissolveAnswer(anchors, duration = 2600, onStart, onFinish) {
+    refreshSettledGeometry() {
+      if (scattered.size) settledGeometryDirty = true;
+    },
+    dissolveAnswer(anchors, duration = 4200, onStart, onFinish) {
       if (!canRenderSettled() || dissolve || !anchors.length) return false;
-      const points = [];
+      const glyphs = [];
       for (const anchor of anchors) {
-        if (anchor.isConnected) points.push(...rasterGlyph(anchor.textContent, anchor));
+        if (!anchor.isConnected) continue;
+        const points = rasterGlyph(anchor.textContent, anchor);
+        if (points.length) glyphs.push({ anchor, points });
       }
-      if (!points.length) return false;
+      if (!glyphs.length) return false;
+      const phaseStep = dissolveTiming.wave / Math.max(1, glyphs.length - 1);
+      glyphs.forEach((glyph, index) => { glyph.dissolvePhase = index * phaseStep; });
       cancelSettledEffects();
-      dissolve = { points, startedAt: null, expiresAt: 0, duration, onStart, onFinish };
+      dissolve = { glyphs, startedAt: null, duration, onStart, onFinish };
       settledGeometryDirty = true;
       return true;
     },
@@ -224,7 +232,14 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
   function updateSettledEffects(now) {
     if (dissolve) {
       dissolve.startedAt ??= now;
-      if (settledGeometryDirty) engine.setSettledGlyphs([dissolve]);
+      if (settledGeometryDirty) {
+        if (dissolve.painted) {
+          for (const glyph of dissolve.glyphs) {
+            glyph.points = rasterGlyph(glyph.anchor.textContent, glyph.anchor);
+          }
+        }
+        engine.setSettledGlyphs(dissolve.glyphs, dissolveTiming);
+      }
       const progress = Math.min(1, (now - dissolve.startedAt) / dissolve.duration);
       engine.setSettledProgress(now, progress);
       settledGeometryDirty = false;
@@ -256,7 +271,15 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
       if (!effect.painted) {
         effect.painted = true;
         queueMicrotask(() => {
-          if (dissolve === effect) effect.onStart?.();
+          if (dissolve !== effect) return;
+          effect.onStart?.({
+            startedAt: effect.startedAt,
+            anchors: effect.glyphs.map(({ anchor, dissolvePhase }) => ({
+              anchor,
+              delay: dissolvePhase * effect.duration,
+              duration: dissolveTiming.handoff * effect.duration
+            }))
+          });
         });
       }
       if (completed) {

@@ -70,6 +70,7 @@ ul { margin: 0; padding-inline-start: 1.2em; }
   isolation: isolate;
   opacity: .77;
   pointer-events: none;
+  transition: opacity 200ms ease-out;
 }
 
 .gradient-ascii {
@@ -176,6 +177,7 @@ body::before {
   min-height: 0;
   padding: 14px var(--gutter) 0;
   pointer-events: none;
+  transition: opacity 200ms ease-out;
 }
 
 .work, .profile-panel {
@@ -753,9 +755,24 @@ body::before {
 .chat-answer-markdown hr { border: 0; border-block-start: 1px solid var(--line); }
 .chat-answer-markdown table { border-collapse: collapse; font-size: .9em; }
 .chat-answer-markdown :is(th, td) { padding: .28em .45em; border-block-end: 1px solid var(--line); text-align: start; }
-.chat-answer-output[data-dissolving] {
-  opacity: 0;
-  transition: opacity 220ms ease-out;
+[data-chat-settled-glyph][data-dissolving-glyph] {
+  animation: chat-glyph-dissolve var(--chat-dissolve-duration) ease-in-out var(--chat-dissolve-delay) both;
+}
+@keyframes chat-glyph-dissolve {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.chat-answer-output[data-dissolving] .chat-answer-markdown :is(blockquote, hr, pre, th, td, a, code) {
+  animation: chat-ornament-dissolve 480ms ease-out var(--chat-dissolve-ornament-delay) both;
+}
+.chat-answer-output[data-dissolving] .chat-answer-markdown li::marker {
+  animation: chat-marker-dissolve 480ms ease-out var(--chat-dissolve-ornament-delay) both;
+}
+@keyframes chat-ornament-dissolve {
+  to { background-color: transparent; border-color: transparent; text-decoration-color: transparent; }
+}
+@keyframes chat-marker-dissolve {
+  to { color: transparent; }
 }
 [data-chat-settled-glyph][data-scattered] { color: transparent; }
 .chat-frontier { visibility: hidden; }

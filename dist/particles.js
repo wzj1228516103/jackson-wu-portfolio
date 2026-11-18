@@ -125,6 +125,7 @@
     uniform float uSettledCount;
     uniform float uSettledTime;
     uniform float uDissolveProgress;
+    uniform float uDissolveTravel;
     uniform float uParticleSize;
     uniform float uDPR;
     uniform vec2 uPixelToClip;
@@ -158,7 +159,7 @@
       gl_Position = projectionMatrix * viewPosition;
       gl_PointSize = 0.04 * uDPR * 2.0 * vScale * (1000.0 / viewDistance);
       vAnswer = 0.0;
-      float revealOrbit = smoothstep(0.52, 1.0, uDissolveProgress);
+      float revealOrbit = smoothstep(0.60, 1.0, uDissolveProgress);
       vOpacity = 1.0 - uAnswerFocus * (1.0 - revealOrbit);
 
       if (uGlyphProgress > 0.0 || uSettledCount > 0.0) {
@@ -181,11 +182,15 @@
             floor(settledIndex / uSettledTextureSize)) + 0.5) / uSettledTextureSize;
           vec4 target = texture2D(uSettledPoints, uv);
           vec2 glyph = target.xy;
+          float handoff = 1.0;
           if (uDissolveProgress >= 0.0) {
-            float delay = random.x * 0.42;
-            float fade = smoothstep(delay, delay + 0.58, uDissolveProgress);
-            glyph += pixelDrift(sin(fade * 3.1415927) * mix(6.0, 34.0, random.z));
-            vAnswer = 1.0 - fade;
+            handoff = smoothstep(target.z, target.w, uDissolveProgress);
+            float flightStart = target.w + uDissolveTravel * random.x * 0.16;
+            float flightEnd = target.w + uDissolveTravel;
+            float flight = smoothstep(flightStart, flightEnd, uDissolveProgress);
+            glyph += pixelDrift(sin(flight * 3.1415927) * mix(6.0, 34.0, random.z));
+            vAnswer = 1.0 - flight;
+            vOpacity = max(vOpacity, 0.72 * smoothstep(0.2, 0.95, flight));
           } else {
             float age = max(uSettledTime - target.z, 0.0);
             float burst = smoothstep(0.0, 0.08, age) * (1.0 - smoothstep(0.12, 0.53, age));
@@ -195,7 +200,7 @@
           }
           gl_Position.xy = mix(gl_Position.xy, glyph * gl_Position.w, vAnswer);
           gl_PointSize = mix(gl_PointSize, uDPR * 1.45, vAnswer);
-          vOpacity = mix(vOpacity, 1.0, vAnswer);
+          vOpacity = mix(vOpacity, 1.0, vAnswer) * handoff;
         }
       }
     }
@@ -330,6 +335,7 @@
         uSettledCount: { value: 0 },
         uSettledTime: { value: 0 },
         uDissolveProgress: { value: -1 },
+        uDissolveTravel: { value: 0 },
         uParticleSize: { value: this.size },
         uTime: { value: 0 },
         uDPR: { value: renderer.getPixelRatio() },
@@ -395,12 +401,13 @@
       this.particleUniforms.uGlyphProgress.value = 0;
     }
 
-    setSettledGlyphs(glyphs) {
+    setSettledGlyphs(glyphs, dissolveTiming) {
       const total = glyphs.reduce((count, glyph) => count + glyph.points.length, 0);
       const side = this.settledTextureSize;
       const count = Math.min(total, side ** 2, this.size ** 2 - glyphTextureSize ** 2);
       const uniforms = this.particleUniforms;
       uniforms.uSettledCount.value = count;
+      uniforms.uDissolveTravel.value = dissolveTiming?.travel ?? 0;
       if (!count) return;
       if (!this.settledTexture) {
         this.settledTexture = floatTexture(new Float32Array(side ** 2 * 4), side);
@@ -416,8 +423,13 @@
             const offset = destination++ * 4;
             data[offset] = point[0];
             data[offset + 1] = point[1];
-            data[offset + 2] = glyph.startedAt / 1000;
-            data[offset + 3] = glyph.expiresAt / 1000;
+            if (dissolveTiming) {
+              data[offset + 2] = glyph.dissolvePhase;
+              data[offset + 3] = glyph.dissolvePhase + dissolveTiming.handoff;
+            } else {
+              data[offset + 2] = glyph.startedAt / 1000;
+              data[offset + 3] = glyph.expiresAt / 1000;
+            }
           }
           sourceIndex++;
         }
