@@ -115,11 +115,16 @@
     attribute vec4 random;
     uniform sampler2D uPosition;
     uniform sampler2D uGlyphPoints;
+    uniform sampler2D uSettledPoints;
     uniform sampler2D uFlowVelocity;
     uniform sampler2D uFlowDensity;
     uniform float uGlyphProgress;
     uniform float uAnswerFocus;
     uniform float uGlyphTextureSize;
+    uniform float uSettledTextureSize;
+    uniform float uSettledCount;
+    uniform float uSettledTime;
+    uniform float uDissolveProgress;
     uniform float uParticleSize;
     uniform float uDPR;
     uniform vec2 uPixelToClip;
@@ -138,6 +143,11 @@
       return drift * min(1.0, cap / max(length(drift), 0.001)) * contact * uPixelToClip;
     }
 
+    vec2 pixelDrift(float magnitude) {
+      float angle = random.y * 6.2831853;
+      return vec2(cos(angle), sin(angle)) * magnitude * uPixelToClip;
+    }
+
     void main() {
       vec3 pos = texture2D(uPosition, position.xy).xyz;
       pos *= mix(1.0, 1.5, pow(random.y, 150.0));
@@ -148,12 +158,13 @@
       gl_Position = projectionMatrix * viewPosition;
       gl_PointSize = 0.04 * uDPR * 2.0 * vScale * (1000.0 / viewDistance);
       vAnswer = 0.0;
-      vOpacity = 1.0 - uAnswerFocus;
+      float revealOrbit = smoothstep(0.52, 1.0, uDissolveProgress);
+      vOpacity = 1.0 - uAnswerFocus * (1.0 - revealOrbit);
 
-      if (uGlyphProgress > 0.0) {
+      if (uGlyphProgress > 0.0 || uSettledCount > 0.0) {
         vec2 cell = floor(position.xy * uParticleSize);
         float index = cell.y * uParticleSize + cell.x;
-        if (index < uGlyphTextureSize * uGlyphTextureSize) {
+        if (uGlyphProgress > 0.0 && index < uGlyphTextureSize * uGlyphTextureSize) {
           vec2 uv = (vec2(mod(index, uGlyphTextureSize), floor(index / uGlyphTextureSize)) + 0.5) / uGlyphTextureSize;
           vec4 target = texture2D(uGlyphPoints, uv);
           if (target.z > 0.0) {
@@ -163,6 +174,28 @@
             gl_PointSize = mix(gl_PointSize, uDPR * target.w, vAnswer);
             vOpacity = mix(vOpacity, 1.0, vAnswer);
           }
+        }
+        float settledIndex = uParticleSize * uParticleSize - index - 1.0;
+        if (settledIndex < uSettledCount) {
+          vec2 uv = (vec2(mod(settledIndex, uSettledTextureSize),
+            floor(settledIndex / uSettledTextureSize)) + 0.5) / uSettledTextureSize;
+          vec4 target = texture2D(uSettledPoints, uv);
+          vec2 glyph = target.xy;
+          if (uDissolveProgress >= 0.0) {
+            float delay = random.x * 0.42;
+            float fade = smoothstep(delay, delay + 0.58, uDissolveProgress);
+            glyph += pixelDrift(sin(fade * 3.1415927) * mix(6.0, 34.0, random.z));
+            vAnswer = 1.0 - fade;
+          } else {
+            float age = max(uSettledTime - target.z, 0.0);
+            float burst = smoothstep(0.0, 0.08, age) * (1.0 - smoothstep(0.12, 0.53, age));
+            float strength = 1.0 - smoothstep(target.w - 0.38, target.w, uSettledTime);
+            glyph += (glyphDrift(glyph) + pixelDrift(burst * mix(4.0, 17.0, random.z))) * strength;
+            vAnswer = 1.0;
+          }
+          gl_Position.xy = mix(gl_Position.xy, glyph * gl_Position.w, vAnswer);
+          gl_PointSize = mix(gl_PointSize, uDPR * 1.45, vAnswer);
+          vOpacity = mix(vOpacity, 1.0, vAnswer);
         }
       }
     }
@@ -279,6 +312,7 @@
       this.computeCamera = new THREE.Camera();
 
       this.matcap = new THREE.TextureLoader().load(matcapUrl);
+      this.settledTextureSize = mobile ? 128 : 256;
       this.glyphDuration = 0;
       this.answerFocus = 0;
       this.answerFocusTarget = 0;
@@ -286,11 +320,16 @@
         uMatcap: { value: this.matcap },
         uPosition: { value: this.origin },
         uGlyphPoints: { value: this.zero },
+        uSettledPoints: { value: this.zero },
         uFlowVelocity: { value: this.zero },
         uFlowDensity: { value: this.zero },
         uGlyphProgress: { value: 0 },
         uAnswerFocus: { value: 0 },
         uGlyphTextureSize: { value: glyphTextureSize },
+        uSettledTextureSize: { value: this.settledTextureSize },
+        uSettledCount: { value: 0 },
+        uSettledTime: { value: 0 },
+        uDissolveProgress: { value: -1 },
         uParticleSize: { value: this.size },
         uTime: { value: 0 },
         uDPR: { value: renderer.getPixelRatio() },
@@ -356,6 +395,51 @@
       this.particleUniforms.uGlyphProgress.value = 0;
     }
 
+    setSettledGlyphs(glyphs) {
+      const total = glyphs.reduce((count, glyph) => count + glyph.points.length, 0);
+      const side = this.settledTextureSize;
+      const count = Math.min(total, side ** 2, this.size ** 2 - glyphTextureSize ** 2);
+      const uniforms = this.particleUniforms;
+      uniforms.uSettledCount.value = count;
+      if (!count) return;
+      if (!this.settledTexture) {
+        this.settledTexture = floatTexture(new Float32Array(side ** 2 * 4), side);
+        uniforms.uSettledPoints.value = this.settledTexture;
+      }
+
+      const data = this.settledTexture.image.data;
+      let sourceIndex = 0;
+      let destination = 0;
+      for (const glyph of glyphs) {
+        for (const point of glyph.points) {
+          if (destination < count && sourceIndex === Math.floor(destination * total / count)) {
+            const offset = destination++ * 4;
+            data[offset] = point[0];
+            data[offset + 1] = point[1];
+            data[offset + 2] = glyph.startedAt / 1000;
+            data[offset + 3] = glyph.expiresAt / 1000;
+          }
+          sourceIndex++;
+        }
+      }
+      this.settledTexture.needsUpdate = true;
+    }
+
+    setSettledProgress(now, dissolveProgress) {
+      this.particleUniforms.uSettledTime.value = now / 1000;
+      this.particleUniforms.uDissolveProgress.value = dissolveProgress;
+    }
+
+    clearSettled(returnToOrbit) {
+      const uniforms = this.particleUniforms;
+      uniforms.uSettledCount.value = 0;
+      uniforms.uDissolveProgress.value = -1;
+      if (returnToOrbit) {
+        this.answerFocus = this.answerFocusTarget = 0;
+        uniforms.uAnswerFocus.value = 0;
+      }
+    }
+
     step(timeSeconds, hz, camera, fluidVelocity, fluidDensity) {
       camera.updateMatrixWorld(true);
       this.group.updateWorldMatrix(true, false);
@@ -389,10 +473,12 @@
       const focusDelta = (this.answerFocusTarget - this.answerFocus) * Math.min(hz * 0.18, 1);
       this.answerFocus += focusDelta;
       this.particleUniforms.uAnswerFocus.value = this.answerFocus;
-      if (this.glyphDuration) {
-        const progress = THREE.MathUtils.clamp((timeSeconds - this.glyphStarted) / this.glyphDuration, 0, 1);
+      if (this.glyphDuration || this.particleUniforms.uSettledCount.value) {
         this.particleUniforms.uFlowVelocity.value = this.compute.uVelocity.value;
         this.particleUniforms.uFlowDensity.value = this.compute.uDensity.value;
+      }
+      if (this.glyphDuration) {
+        const progress = THREE.MathUtils.clamp((timeSeconds - this.glyphStarted) / this.glyphDuration, 0, 1);
         this.particleUniforms.uGlyphProgress.value = 1 - (1 - progress) ** 4;
       }
     }
@@ -407,6 +493,7 @@
       this.randomTexture.dispose();
       this.zero.dispose();
       this.glyphTexture?.dispose();
+      this.settledTexture?.dispose();
       this.matcap.dispose();
       for (const target of this.targets) target.dispose();
     }

@@ -83,6 +83,9 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
       canvas, resize, draw, dispose,
       setGlyph: (points, startTime, duration) => particles.setGlyph(points, startTime, duration),
       clearGlyph: () => particles?.clearGlyph(),
+      setSettledGlyphs: glyphs => particles.setSettledGlyphs(glyphs),
+      setSettledProgress: (now, progress) => particles.setSettledProgress(now, progress),
+      clearSettled: returnToOrbit => particles?.clearSettled(returnToOrbit),
       setAnswerMode: active => particles?.setAnswerMode(active)
     };
   }
@@ -98,6 +101,11 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
   let unavailable = false;
   let answerMode = false;
   let glyph, glyphDirty;
+  const scattered = new Map();
+  const scatterHold = 650;
+  let scatterDirty = false;
+  let settledGeometryDirty = false;
+  let dissolve;
 
   function acknowledgeGlyph(rendered) {
     const onDrawn = glyph?.onDrawn;
@@ -120,6 +128,24 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
   function canRenderGlyphs() {
     return !!(rasterGlyph && tryWebGL && !unavailable && !paused &&
       !reduced.matches && engine?.canvas !== canvas2d);
+  }
+
+  function canRenderSettled() {
+    return answerMode && canRenderGlyphs() && engine?.canvas === webglCanvas && visible && !document.hidden;
+  }
+
+  function releaseScatter(anchor, entry) {
+    scattered.delete(anchor);
+    scatterDirty = true;
+    queueMicrotask(() => entry.onChange?.(anchor, false));
+  }
+
+  function cancelSettledEffects() {
+    for (const [anchor, entry] of scattered) releaseScatter(anchor, entry);
+    const interrupted = dissolve;
+    dissolve = null;
+    engine?.clearSettled?.(false);
+    if (interrupted) queueMicrotask(() => interrupted.onFinish?.(false));
   }
 
   window.portfolioParticles = {
@@ -145,8 +171,33 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
     clearAnswer() {
       answerMode = false;
       clearGlyph();
+      cancelSettledEffects();
       engine?.setAnswerMode?.(false);
-    }
+    },
+    scatterGlyphs(anchors, onChange) {
+      if (!canRenderSettled() || dissolve || !anchors.length) return false;
+      const now = performance.now();
+      for (const anchor of anchors) {
+        const entry = scattered.get(anchor) ?? { anchor, onChange, startedAt: now };
+        entry.expiresAt = now + scatterHold;
+        scattered.set(anchor, entry);
+      }
+      scatterDirty = true;
+      return true;
+    },
+    dissolveAnswer(anchors, duration = 2600, onStart, onFinish) {
+      if (!canRenderSettled() || dissolve || !anchors.length) return false;
+      const points = [];
+      for (const anchor of anchors) {
+        if (anchor.isConnected) points.push(...rasterGlyph(anchor.textContent, anchor));
+      }
+      if (!points.length) return false;
+      cancelSettledEffects();
+      dissolve = { points, startedAt: null, expiresAt: 0, duration, onStart, onFinish };
+      settledGeometryDirty = true;
+      return true;
+    },
+    cancelSettledEffects
   };
 
   function updateGlyph(now) {
@@ -168,6 +219,61 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
     const timeInFlight = Math.max(0, now - glyph.startedAt) + lead;
     engine.setGlyph(points, elapsed - timeInFlight / 1000, glyph.duration / 1000);
     return true;
+  }
+
+  function updateSettledEffects(now) {
+    if (dissolve) {
+      dissolve.startedAt ??= now;
+      if (settledGeometryDirty) engine.setSettledGlyphs([dissolve]);
+      const progress = Math.min(1, (now - dissolve.startedAt) / dissolve.duration);
+      engine.setSettledProgress(now, progress);
+      settledGeometryDirty = false;
+      return progress === 1;
+    }
+
+    for (const [anchor, entry] of scattered) {
+      if (!anchor.isConnected || now >= entry.expiresAt) {
+        releaseScatter(anchor, entry);
+        continue;
+      }
+      if (!entry.points || settledGeometryDirty) {
+        entry.points = rasterGlyph(anchor.textContent, anchor);
+        if (!entry.points.length) releaseScatter(anchor, entry);
+      }
+    }
+    if (scatterDirty || settledGeometryDirty && scattered.size) {
+      engine.setSettledGlyphs?.(Array.from(scattered.values()));
+      scatterDirty = false;
+    }
+    if (scattered.size) engine.setSettledProgress(now, -1);
+    settledGeometryDirty = false;
+    return false;
+  }
+
+  function acknowledgeSettledEffects(completed) {
+    if (dissolve) {
+      const effect = dissolve;
+      if (!effect.painted) {
+        effect.painted = true;
+        queueMicrotask(() => {
+          if (dissolve === effect) effect.onStart?.();
+        });
+      }
+      if (completed) {
+        answerMode = false;
+        dissolve = null;
+        engine.clearSettled(true);
+        queueMicrotask(() => effect.onFinish?.(true));
+      }
+      return;
+    }
+    for (const [anchor, entry] of scattered) {
+      if (entry.painted) continue;
+      entry.painted = true;
+      queueMicrotask(() => {
+        if (scattered.get(anchor) === entry) entry.onChange?.(anchor, true);
+      });
+    }
   }
 
   function track(point, restart) {
@@ -204,6 +310,7 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
     try { previousEngine.dispose(); } catch { /* The WebGL context may already be gone. */ }
     acknowledgeGlyph(false);
     clearGlyph();
+    cancelSettledEffects();
     dirty = true;
     syncMotion();
   }
@@ -223,13 +330,15 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
         };
         engine.resize(size);
         engine.setAnswerMode?.(answerMode);
-        glyphDirty = true;
+        glyphDirty = settledGeometryDirty = true;
         pointer.active = previous.active = false;
         dirty = false;
       }
       const glyphDrawn = updateGlyph(now);
+      const dissolveComplete = updateSettledEffects(now);
       if (engine.draw(now, elapsed, delta, pointer, getBrush())) engine.canvas.classList.add("is-rendering");
       if (glyphDrawn) acknowledgeGlyph(true);
+      acknowledgeSettledEffects(dissolveComplete);
     } catch {
       if (engine.canvas === webglCanvas) fallBack();
       else {
@@ -256,6 +365,7 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
         engine?.canvas.classList.remove("is-rendering");
         acknowledgeGlyph(false);
         clearGlyph();
+        cancelSettledEffects();
       }
       return;
     }
@@ -291,7 +401,7 @@ import { createGlyphRaster } from "./answer-layout.mjs?v=glyph-frontier";
   const resizeObserver = new ResizeObserver(() => { dirty = true; });
   resizeObserver.observe(webglCanvas);
   if (answerRegion) resizeObserver.observe(answerRegion);
-  addEventListener("scroll", () => { glyphDirty = true; }, {passive: true, capture: true});
+  addEventListener("scroll", () => { glyphDirty = settledGeometryDirty = true; }, {passive: true, capture: true});
   addEventListener("pointermove", event => {
     if (event.isPrimary && event.pointerType !== "touch") track(event, false);
   }, {passive: true});

@@ -1,8 +1,9 @@
 import { locale } from "./localize.mjs";
-import translations from "./chat-copy.mjs?v=glyph-chat";
+import translations from "./chat-copy.mjs?v=settled-chat";
 
 const copy = translations[locale] ?? translations["zh-CN"];
 const requestLimitCodes = new Set(["rate_limited", "daily_limit", "busy"]);
+const answerIdleMs = 60_000;
 
 function configuredEndpoint(value) {
   if (!value.trim()) return null;
@@ -49,11 +50,215 @@ async function readEvents(response, handleEvent) {
   }
 }
 
-function createAnswerOutput() {
+function createSettledEffects(output, finished, reduced, canIdle, onIdle) {
+  const glyphSelector = "[data-chat-settled-glyph]";
+  let glyphs = [];
+  let idleTimer;
+  let dissolving;
+  let normalizeQueued = false;
+  let lastScan = -Infinity;
+  let hadSelection = false;
+
+  function hasSelection() {
+    const selection = document.getSelection();
+    return Boolean(selection?.rangeCount && !selection.isCollapsed &&
+      selection.getRangeAt(0).intersectsNode(output));
+  }
+
+  function restore(anchor) {
+    delete anchor.dataset.scattered;
+    if (!anchor.isConnected || hasSelection()) return;
+    anchor.replaceWith(...anchor.childNodes);
+    if (normalizeQueued) return;
+    normalizeQueued = true;
+    queueMicrotask(() => {
+      normalizeQueued = false;
+      if (glyphs.length && !hasSelection()) finished.normalize();
+    });
+  }
+
+  function restoreAll() {
+    dissolving = undefined;
+    delete output.dataset.dissolving;
+    window.portfolioParticles?.cancelSettledEffects?.();
+    finished.querySelectorAll(glyphSelector).forEach(restore);
+  }
+
+  function visibleGlyphs(point) {
+    const area = output.getBoundingClientRect();
+    const radius = 31;
+    const top = Math.max(area.top, point ? point.y - radius : 0);
+    const bottom = Math.min(area.bottom, point ? point.y + radius : innerHeight);
+    const left = Math.max(area.left, point ? point.x - radius : 0);
+    const right = Math.min(area.right, point ? point.x + radius : innerWidth);
+    if (top >= bottom || left >= right) return { anchors: [], inserted: [] };
+
+    const nodes = [];
+    let end = 0;
+    for (const child of finished.childNodes) {
+      const text = child.nodeType === Node.TEXT_NODE ? child : child.firstChild;
+      if (!(text instanceof Text) || !text.length) continue;
+      nodes.push({ text, start: end, end: end + text.length });
+      end += text.length;
+    }
+    const measure = glyph => {
+      const node = nodes.find(node => glyph.start < node.end);
+      if (!node || glyph.end > node.end) return null;
+      const range = document.createRange();
+      range.setStart(node.text, glyph.start - node.start);
+      range.setEnd(node.text, glyph.end - node.start);
+      return { range, rect: range.getBoundingClientRect() };
+    };
+
+    let first = 0;
+    let last = glyphs.length;
+    while (first < last) {
+      const index = (first + last) >>> 1;
+      const measured = measure(glyphs[index]);
+      if (measured && measured.rect.bottom < top) first = index + 1;
+      else last = index;
+    }
+
+    const ranges = [];
+    for (let index = first; index < glyphs.length; index++) {
+      const measured = measure(glyphs[index]);
+      if (!measured) continue;
+      const { range, rect } = measured;
+      if (rect.top > bottom) break;
+      if (rect.width && rect.height && rect.bottom > top && rect.left < right && rect.right > left) {
+        const distance = point ? Math.hypot(
+          Math.max(rect.left - point.x, 0, point.x - rect.right),
+          Math.max(rect.top - point.y, 0, point.y - rect.bottom)
+        ) : 0;
+        if (distance < radius) ranges.push({ range, index, distance });
+      }
+    }
+    if (point && ranges.length > 12) {
+      ranges.sort((a, b) => a.distance - b.distance);
+      ranges.length = 12;
+    }
+    ranges.sort((a, b) => b.index - a.index);
+    const anchors = [];
+    const inserted = [];
+    for (const { range } of ranges) {
+      const existing = range.startContainer.parentElement;
+      if (existing.matches(glyphSelector)) {
+        anchors.push(existing);
+        continue;
+      }
+      const anchor = document.createElement("span");
+      anchor.dataset.chatSettledGlyph = "";
+      range.surroundContents(anchor);
+      anchors.push(anchor);
+      inserted.push(anchor);
+    }
+    return { anchors, inserted };
+  }
+
+  function readyToIdle() {
+    return glyphs.length > 0 && !output.hidden && !reduced.matches && !document.hidden &&
+      !output.contains(document.activeElement) && !hasSelection() && canIdle();
+  }
+
+  function idle() {
+    if (!readyToIdle()) return;
+    const particles = window.portfolioParticles;
+    if (!particles?.dissolveAnswer) return;
+    restoreAll();
+    const group = visibleGlyphs();
+    if (!group.anchors?.length) return;
+    const current = {};
+    dissolving = current;
+    const accepted = particles.dissolveAnswer(group.anchors, 2600, () => {
+      if (dissolving === current) output.dataset.dissolving = "";
+    }, complete => {
+      if (dissolving !== current) return;
+      dissolving = undefined;
+      if (complete) onIdle();
+      else restoreAll();
+    });
+    if (!accepted) restoreAll();
+  }
+
+  function noteInteraction() {
+    if (dissolving) restoreAll();
+    clearTimeout(idleTimer);
+    if (readyToIdle()) idleTimer = setTimeout(idle, answerIdleMs);
+  }
+
+  output.addEventListener("pointermove", event => {
+    if (!glyphs.length) return;
+    noteInteraction();
+    const particles = window.portfolioParticles;
+    if (event.pointerType !== "mouse" || event.buttons || reduced.matches || hasSelection() ||
+        output.matches(":focus-visible") || !particles?.scatterGlyphs ||
+        performance.now() - lastScan < 24) return;
+    lastScan = performance.now();
+    const { anchors, inserted } = visibleGlyphs({ x: event.clientX, y: event.clientY });
+    if (!anchors?.length) return;
+    if (!particles.scatterGlyphs(anchors, (anchor, active) => {
+      if (active && !hasSelection() && !output.matches(":focus-visible")) anchor.dataset.scattered = "";
+      else restore(anchor);
+    })) inserted.forEach(restore);
+  }, { capture: true, passive: true });
+  output.addEventListener("pointerdown", () => {
+    if (!glyphs.length) return;
+    restoreAll();
+    noteInteraction();
+  }, { capture: true, passive: true });
+  output.addEventListener("scroll", () => {
+    if (!glyphs.length) return;
+    restoreAll();
+    noteInteraction();
+  }, { passive: true });
+  output.addEventListener("pointerleave", noteInteraction, { passive: true });
+  output.addEventListener("focusin", () => {
+    if (!glyphs.length) return;
+    restoreAll();
+    noteInteraction();
+  });
+  output.addEventListener("focusout", () => queueMicrotask(noteInteraction));
+  output.addEventListener("keydown", noteInteraction);
+  document.addEventListener("selectionchange", () => {
+    const selected = hasSelection();
+    if (!hadSelection && !selected) return;
+    hadSelection = selected;
+    restoreAll();
+    noteInteraction();
+  });
+  document.addEventListener("visibilitychange", noteInteraction);
+  reduced.addEventListener("change", () => {
+    if (reduced.matches) restoreAll();
+    noteInteraction();
+  });
+
+  return {
+    noteInteraction,
+    settle(segments) {
+      let offset = 0;
+      glyphs = [];
+      for (const text of segments) {
+        const end = offset + text.length;
+        if (text.trim()) glyphs.push({ start: offset, end });
+        offset = end;
+      }
+      noteInteraction();
+    },
+    reset() {
+      glyphs = [];
+      lastScan = -Infinity;
+      clearTimeout(idleTimer);
+      restoreAll();
+    }
+  };
+}
+
+function createAnswerOutput(canIdle, onIdle) {
   const output = document.querySelector("[data-chat-answer-output]");
   const frontier = output.querySelector("[data-chat-frontier]");
+  const finished = output.querySelector("[data-chat-finished]");
   const completed = document.createTextNode("");
-  output.querySelector("[data-chat-finished]").append(completed);
+  finished.append(completed);
   const announcement = document.querySelector("[data-chat-announcement]");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const segmenter = typeof Intl.Segmenter === "function"
@@ -66,6 +271,14 @@ function createAnswerOutput() {
   let glyphTimer;
   let activeGlyph;
   let ended = false;
+  let settled = false;
+  const effects = createSettledEffects(output, finished, reduced, canIdle, () => {
+    clear();
+    onIdle();
+  });
+  const segment = text => segmenter
+    ? Array.from(segmenter.segment(text), ({ segment }) => segment)
+    : text.match(/\p{Regional_Indicator}{2}|\P{M}\p{M}*\p{Emoji_Modifier}?(?:\u200D\P{M}\p{M}*\p{Emoji_Modifier}?)*\u200D?|\p{M}+/gu) ?? [];
 
   function followEnd(update) {
     const follow = output.scrollHeight - output.clientHeight - output.scrollTop < 42;
@@ -74,14 +287,17 @@ function createAnswerOutput() {
   }
 
   function reset() {
+    effects.reset();
     clearTimeout(tailTimer);
     clearTimeout(glyphTimer);
     tailTimer = glyphTimer = activeGlyph = undefined;
     ended = false;
+    settled = false;
     pending = [];
     cursor = 0;
     tail = "";
     completed.data = "";
+    finished.replaceChildren(completed);
     frontier.textContent = "";
     announcement.textContent = "";
     output.scrollTop = 0;
@@ -137,7 +353,11 @@ function createAnswerOutput() {
     }
     pending = [];
     cursor = 0;
-    if (ended && completed.length) announcement.textContent = completed.data;
+    if (ended && !settled && completed.length) {
+      settled = true;
+      announcement.textContent = completed.data;
+      effects.settle(segment(completed.data));
+    }
   }
 
   function flushTail() {
@@ -157,14 +377,19 @@ function createAnswerOutput() {
     }
     if (!tail && pending.length > cursor) tail = pending.pop();
     const unread = tail + text;
-    const segments = segmenter
-      ? Array.from(segmenter.segment(unread), ({ segment }) => segment)
-      : unread.match(/\p{Regional_Indicator}{2}|\P{M}\p{M}*\p{Emoji_Modifier}?(?:\u200D\P{M}\p{M}*\p{Emoji_Modifier}?)*\u200D?|\p{M}+/gu) ?? [];
+    const segments = segment(unread);
     tail = segments.pop() ?? "";
     for (const segment of segments) pending.push(segment);
     clearTimeout(tailTimer);
     tailTimer = setTimeout(flushTail, 52);
     pump();
+  }
+
+  function clear() {
+    reset();
+    output.hidden = true;
+    delete document.body.dataset.answerActive;
+    window.portfolioParticles?.clearAnswer?.();
   }
 
   return {
@@ -178,12 +403,8 @@ function createAnswerOutput() {
       reset();
       write(text);
     },
-    clear() {
-      reset();
-      output.hidden = true;
-      delete document.body.dataset.answerActive;
-      window.portfolioParticles?.clearAnswer?.();
-    }
+    clear,
+    noteInteraction: effects.noteInteraction
   };
 }
 
@@ -196,10 +417,13 @@ function enableChat(footer, endpoint) {
   const clear = form.querySelector("[data-chat-clear]");
   const status = form.querySelector("[data-chat-status]");
   const compact = matchMedia("(max-width: 800px)");
-  const answer = createAnswerOutput();
   let sessionId;
   let activeRequest;
   let retryQuestion;
+  const answer = createAnswerOutput(
+    () => !activeRequest && !input.value,
+    () => { clear.hidden = true; }
+  );
 
   for (const element of footer.querySelectorAll("[data-chat-copy]")) {
     element.textContent = copy[element.dataset.chatCopy];
@@ -279,6 +503,7 @@ function enableChat(footer, endpoint) {
     } finally {
       activeRequest = undefined;
       syncActions();
+      answer.noteInteraction();
     }
   }
 
@@ -294,7 +519,12 @@ function enableChat(footer, endpoint) {
     syncActions();
   }
 
-  input.addEventListener("input", syncActions);
+  input.addEventListener("input", () => {
+    syncActions();
+    answer.noteInteraction();
+  });
+  form.addEventListener("focusin", answer.noteInteraction);
+  form.addEventListener("keydown", answer.noteInteraction);
   form.addEventListener("submit", event => {
     event.preventDefault();
     const question = input.value.trim();

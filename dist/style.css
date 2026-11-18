@@ -703,6 +703,11 @@ body::before {
   font-size: clamp(16px, 1.6vw, 21px);
   line-height: 1.55;
 }
+.chat-answer-output[data-dissolving] {
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+[data-chat-settled-glyph][data-scattered] { color: transparent; }
 .chat-frontier { visibility: hidden; }
 body[data-answer-active] .motion-surface {
   z-index: 3;
