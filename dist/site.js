@@ -19,7 +19,8 @@ import { locale, t } from "./localize.mjs";
       card.hidden = category !== "all" && !card.dataset.category.split(" ").includes(category);
     }
 
-    const total = cards.filter(card => !card.hidden).length;
+    // Essay cards share the list but are not projects.
+    const total = cards.filter(card => !card.hidden && !card.classList.contains("essay-card")).length;
     const message = t("正在展示 {count} 个项目", { count: total });
     count.textContent = String(total).padStart(2, "0");
     count.setAttribute("aria-label", message);
