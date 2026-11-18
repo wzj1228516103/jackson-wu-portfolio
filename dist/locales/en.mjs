@@ -1,4 +1,8 @@
 export default {
+  "随笔": "Essays",
+  "[ 随笔 ]": "[ Essays ]",
+  "旧博客里的记录": "Notes from the old blog",
+  "2023 到 2025 年写的五篇生活记录，已从旧博客迁移过来：": "Five personal posts written between 2023 and 2025, migrated from the old blog:",
   "JacksonWu的个人简历与项目集，涵盖后端开发、AI 应用工程和小程序开发工程技能套件。": "JacksonWu’s résumé and portfolio, covering backend development, AI application engineering, and the Mini Program Engineering Skill Suite.",
   "JacksonWu · 后端开发与 AI 应用工程": "JacksonWu · Backend Development & AI Engineering",
   "跳到简历": "Skip to résumé",
