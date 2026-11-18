@@ -790,3 +790,48 @@ body::before {
 .essay-card:focus-visible { outline-offset: -2px; }
 .essay-card:hover .project-art, .essay-card[aria-current="location"] .project-art { border-color: var(--art-accent); }
 .essay-card:hover .project-meta, .essay-card[aria-current="location"] .project-meta { color: var(--accent); }
+
+
+/* Reader dialog for 随记: paper-like page on top of the site. */
+.essay-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(920px, calc(100% - 2 * var(--gutter)));
+  height: min(88dvh, 940px);
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #d8d0c2;
+  border-radius: 14px;
+  background: #fbf9f5;
+  color: #333;
+}
+.essay-dialog[open] { display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.essay-dialog::backdrop { background: #000a; }
+.essay-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e6e0d6;
+}
+.essay-dialog-head h2 { margin: 0; font-size: 16px; color: #3d372e; }
+.essay-close {
+  border: 1px solid #d8d0c2;
+  border-radius: 999px;
+  padding: 4px 14px;
+  background: #fff;
+  color: #3d372e;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.essay-close:hover, .essay-close:focus-visible { border-color: #b9ab94; }
+.essay-dialog-body {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 22px 32px;
+}
+.essay-dialog-body img { max-width: 100%; height: auto; }

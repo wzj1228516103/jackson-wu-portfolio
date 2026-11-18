@@ -18,6 +18,7 @@
   <script defer src="./gradient-ascii.js?v=wide"></script>
   <script type="module" src="./motion.js?v=locales"></script>
   <script type="module" src="./chat.js"></script>
+  <script type="module" src="./essays.js"></script>
 </head>
 <body>
   <div class="motion-surface" aria-hidden="true">
@@ -378,27 +379,27 @@
           <h2 id="essays-title">博客里的记录</h2>
           <p>2023 到 2025 年写的五篇记录，从旧博客搬过来：</p>
           <div class="essay-list">
-            <a class="essay-card" href="#essay-2023-06-07">
+            <a class="essay-card" href="#essay-2023-06-07" data-essay="essay-2023-06-07">
               <div class="project-art" aria-hidden="true"><img src="./img/essays/61629d6ec916.jpg" alt="" loading="lazy"></div>
               <div class="project-meta"><strong>我的爷爷</strong><span aria-hidden="true">→</span></div>
               <div class="project-stack">随记 · 2023-06-07</div>
             </a>
-            <a class="essay-card" href="#essay-2023-09-24">
+            <a class="essay-card" href="#essay-2023-09-24" data-essay="essay-2023-09-24">
               <div class="project-art" aria-hidden="true"><img src="./img/essays/63a48f31e9f6.jpg" alt="" loading="lazy"></div>
               <div class="project-meta"><strong>我的高三</strong><span aria-hidden="true">→</span></div>
               <div class="project-stack">随记 · 2023-09-24</div>
             </a>
-            <a class="essay-card" href="#essay-2025-05-23">
+            <a class="essay-card" href="#essay-2025-05-23" data-essay="essay-2025-05-23">
               <div class="project-art" aria-hidden="true"><img src="https://pic.imgdd.cc/item/6831f9ef3c3a6234d3391b5b.jpg" alt="" loading="lazy"></div>
               <div class="project-meta"><strong>碎碎念</strong><span aria-hidden="true">→</span></div>
               <div class="project-stack">随记 · 2025-05-23</div>
             </a>
-            <a class="essay-card" href="#essay-2025-05-25">
+            <a class="essay-card" href="#essay-2025-05-25" data-essay="essay-2025-05-25">
               <div class="project-art" aria-hidden="true"><img src="./img/essays/b8be24b5965b.jpg" alt="" loading="lazy"></div>
               <div class="project-meta"><strong>我的生日</strong><span aria-hidden="true">→</span></div>
               <div class="project-stack">随记 · 2025-05-25</div>
             </a>
-            <a class="essay-card" href="#essay-2025-06-20">
+            <a class="essay-card" href="#essay-2025-06-20" data-essay="essay-2025-06-20">
               <div class="project-art" aria-hidden="true"><img src="./img/essays/501cc2014602.jpg" alt="" loading="lazy"></div>
               <div class="project-meta"><strong>复习周有感</strong><span aria-hidden="true">→</span></div>
               <div class="project-stack">随记 · 2025-06-20</div>
@@ -406,10 +407,7 @@
           </div>
         </section>
 
-<section class="detail-section essay-detail" id="essay-2023-06-07" tabindex="-1" aria-labelledby="essay-2023-06-07-title">
-          <p class="label">[ 随记 · 2023-06-07 ]</p>
-          <h2 id="essay-2023-06-07-title">我的爷爷</h2>
-          <div class="essay-surface">
+<template id="essay-2023-06-07" data-title="我的爷爷" data-date="2023-06-07">
 <article><style>
   .memory {
     font-family: "LXGW WenKai", "Hiragino Sans GB", sans-serif;
@@ -512,14 +510,8 @@
     我们是孤单爷孙俩 <span style="font-size: 1.5em;">✌</span>
   </div>
 </div></article>
-          </div>
-          <p><a href="#work">← 返回项目列表</a></p>
-        </section>
-
-        <section class="detail-section essay-detail" id="essay-2023-09-24" tabindex="-1" aria-labelledby="essay-2023-09-24-title">
-          <p class="label">[ 随记 · 2023-09-24 ]</p>
-          <h2 id="essay-2023-09-24-title">我的高三</h2>
-          <div class="essay-surface">
+</template>
+<template id="essay-2023-09-24" data-title="我的高三" data-date="2023-09-24">
 <article><style>
   .diary {
     font-family: "LXGW WenKai", sans-serif;
@@ -580,14 +572,8 @@
 <p>  <img src="./img/essays/8f553ad30d34.jpg" alt="学校免费的咸汤圆"></p>
 <p>  <img src="./img/essays/a6c61d6d74c4.jpg" alt="作业帮网课"></p>
 </div></article>
-          </div>
-          <p><a href="#work">← 返回项目列表</a></p>
-        </section>
-
-        <section class="detail-section essay-detail" id="essay-2025-05-23" tabindex="-1" aria-labelledby="essay-2025-05-23-title">
-          <p class="label">[ 随记 · 2025-05-23 ]</p>
-          <h2 id="essay-2025-05-23-title">碎碎念</h2>
-          <div class="essay-surface">
+</template>
+<template id="essay-2025-05-23" data-title="碎碎念" data-date="2025-05-23">
 <article><div class="diary">
   <div class="diary-title">碎碎念Day1</div>
 
@@ -685,14 +671,8 @@
     }
   }
 </style></article>
-          </div>
-          <p><a href="#work">← 返回项目列表</a></p>
-        </section>
-
-        <section class="detail-section essay-detail" id="essay-2025-05-25" tabindex="-1" aria-labelledby="essay-2025-05-25-title">
-          <p class="label">[ 随记 · 2025-05-25 ]</p>
-          <h2 id="essay-2025-05-25-title">我的生日</h2>
-          <div class="essay-surface">
+</template>
+<template id="essay-2025-05-25" data-title="我的生日" data-date="2025-05-25">
 <article><div class="birthday-container">
   <div class="birthday-text">祝自己生日快乐!</div>
   <div class="birthday-text">HAPPY BIRTHDAY!!</div>
@@ -729,14 +709,8 @@
     }
   }
 </style></article>
-          </div>
-          <p><a href="#work">← 返回项目列表</a></p>
-        </section>
-
-        <section class="detail-section essay-detail" id="essay-2025-06-20" tabindex="-1" aria-labelledby="essay-2025-06-20-title">
-          <p class="label">[ 随记 · 2025-06-20 ]</p>
-          <h2 id="essay-2025-06-20-title">复习周有感</h2>
-          <div class="essay-surface">
+</template>
+<template id="essay-2025-06-20" data-title="复习周有感" data-date="2025-06-20">
 <article><style>
   .reflection {
     font-family: "LXGW WenKai", sans-serif;
@@ -802,9 +776,18 @@
 <p>  <img src="./img/essays/81db8a12e854.jpg" alt="老家的某家柴犬咖啡店"></p>
 <p>  <img src="./img/essays/846b35e4f881.jpg" alt="听话的可爱小柴犬"></p>
 </div></article>
-          </div>
-          <p><a href="#work">← 返回项目列表</a></p>
-        </section>
+</template>
+
+
+
+
+        
+
+        
+
+        
+
+        
 
 
 <footer class="panel-footer"><a href="#profile">↑ 返回简介</a><a class="back-projects" href="#work">↑ 返回项目</a></footer>
@@ -838,5 +821,13 @@
       </div>
     </form>
   </dialog>
+  <dialog class="essay-dialog" id="essay-dialog" aria-labelledby="essay-dialog-title">
+    <header class="essay-dialog-head">
+      <h2 id="essay-dialog-title" data-essay-title></h2>
+      <button class="essay-close" type="button" data-essay-close>关闭</button>
+    </header>
+    <div class="essay-dialog-body" data-essay-body></div>
+  </dialog>
+
 </body>
 </html>
