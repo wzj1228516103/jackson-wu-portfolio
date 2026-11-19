@@ -610,34 +610,35 @@ body::before {
   z-index: 5;
   inset-inline: var(--chat-start, var(--gutter)) var(--chat-end, var(--gutter));
   bottom: calc(12px + env(safe-area-inset-bottom));
-  max-width: 450px;
+  max-width: 600px;
   margin-inline: auto;
 }
 
 .chat-compose {
+  color-scheme: light;
   display: flex;
   align-items: center;
   gap: 5px;
   height: 48px;
   padding: 4px 5px 4px 8px;
-  border: 1px solid #9279c7;
+  border: 1px solid #e7e0f2;
   border-radius: 999px;
-  background: linear-gradient(110deg, #2a1f43, #171222 65%);
-  box-shadow: 0 4px 22px #000b, 0 0 18px #9c74ff32;
+  background: #fbfaff;
+  box-shadow: 0 4px 22px #0008, 0 0 12px #b79bff24;
 }
 .chat-compose:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 4px 22px #000b, 0 0 0 2px #b79bff38, 0 0 21px #9c74ff42;
+  box-shadow: 0 4px 22px #0008, 0 0 0 2px #b79bff48;
 }
 .chat-compose-ai {
   display: grid;
   flex: 0 0 28px;
   place-items: center;
   height: 28px;
-  border: 1px solid #ad92f271;
+  border: 1px solid #e7e0f2;
   border-radius: 50%;
-  background: #b79bff24;
-  color: #e5d9ff;
+  background: #f0e9fa;
+  color: #514164;
   font: 700 10px/1 var(--mono);
 }
 .chat-entry input {
@@ -648,11 +649,11 @@ body::before {
   padding: 0 4px;
   border: 0;
   background: transparent;
-  color: var(--ink);
+  color: #21192d;
   font: inherit;
   font-size: 13px;
 }
-.chat-entry input::placeholder { color: #d5c9e8; }
+.chat-entry input::placeholder { color: #665b75; }
 .chat-entry input:focus { outline: none; }
 
 .chat-feedback {
@@ -681,15 +682,15 @@ body::before {
   border: 1px solid transparent;
   border-radius: 50%;
   background: none;
-  color: var(--muted);
+  color: #665b75;
   cursor: pointer;
   font: 600 18px/1 var(--sans);
 }
-.chat-icon:hover:not(:disabled) { border-color: #71618b; color: var(--ink); }
+.chat-icon:hover:not(:disabled) { background: #f0e9fa; color: #21192d; }
 .chat-icon:disabled { opacity: .48; cursor: default; }
-.chat-send, .chat-stop { color: #1a102e; background: #c6adff; }
-.chat-send:disabled { opacity: .65; }
-.chat-send:hover:not(:disabled), .chat-stop:hover:not(:disabled) { background: #e0ceff; color: #1a102e; }
+.chat-send, .chat-stop { color: #f8f3ff; background: #3f3056; }
+.chat-send:disabled { opacity: 1; color: #746688; background: #ebe4f4; }
+.chat-send:hover:not(:disabled), .chat-stop:hover:not(:disabled) { color: #fff; background: #594578; }
 .chat-stop { font-size: 12px; }
 
 .chat-answer-region {
