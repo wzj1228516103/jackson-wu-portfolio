@@ -37,13 +37,20 @@
 .site-pet.is-animated img { visibility: hidden; }
 .site-pet.is-animated::before {
   content: "";
-  background-image: url("./jacksonwu-pet-motion.webp");
+  background-image: url("./jacksonwu-pet-motion-smooth.webp");
   background-repeat: no-repeat;
-  background-size: 600% 300%;
-  background-position: calc(var(--pet-frame, 0) * 20%) calc(var(--pet-row, 0) * 50%);
+  background-size: 1000% 500%;
+  background-position: calc(var(--pet-frame, 0) * 100% / 9) calc(var(--pet-row, 0) * 25%);
+}
+.site-pet.is-animated[data-pet-action="looking"]::before {
+  background-image: url("./jacksonwu-pet-gaze.webp");
+  background-size: 800% 200%;
+  background-position: calc(var(--pet-frame, 0) * 100% / 7) calc(var(--pet-look-row, 0) * 100%);
 }
 .site-pet[data-pet-action="waving"] { --pet-row: 1; }
 .site-pet[data-pet-action="jumping"] { --pet-row: 2; }
+.site-pet[data-pet-action="running-left"] { --pet-row: 3; }
+.site-pet[data-pet-action="running-right"] { --pet-row: 4; }
 
 .site-pet:focus-visible img, .site-pet:focus-visible::before { transform: translateY(-3px); }
 .site-pet.is-dragging { cursor: grabbing; }
