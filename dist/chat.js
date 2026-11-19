@@ -1,5 +1,6 @@
 import { locale } from "./localize.mjs";
-import translations from "./chat-copy.mjs?v=markdown-chat";
+import translations from "./chat-copy.mjs?v=visitor-access";
+import { getChallengeToken } from "./chat-challenge.mjs";
 import { answerPreviewText, renderAnswerMarkdown } from "./answer-markdown.mjs?v=markdown-chat";
 
 const copy = translations[locale] ?? translations["zh-CN"];
@@ -7,7 +8,7 @@ const requestLimitCodes = new Set(["rate_limited", "daily_limit", "busy"]);
 const answerIdleMs = 60_000;
 const answerDissolveMs = 4200;
 
-function configuredEndpoint(value) {
+function configuredEndpoint(value = "") {
   if (!value.trim()) return null;
   try {
     const url = new URL(value, location.href);
@@ -519,7 +520,14 @@ function enableChat(footer, endpoint) {
   const retry = form.querySelector("[data-chat-retry]");
   const clear = form.querySelector("[data-chat-clear]");
   const status = form.querySelector("[data-chat-status]");
+  const challenge = form.querySelector("#portfolio-chat-challenge");
+  const siteKey = footer.dataset.chatTurnstileSiteKey?.trim();
+  const accessUrl = footer.dataset.chatAccessEndpoint?.trim();
+  const accessEndpoint = configuredEndpoint(accessUrl);
+  const requireAccess = Boolean(siteKey || accessUrl);
   const compact = matchMedia("(max-width: 800px)");
+  let accessToken;
+  let accessExpiresAt = 0;
   let sessionId;
   let activeRequest;
   let retryQuestion;
@@ -560,10 +568,42 @@ function enableChat(footer, endpoint) {
     let failure = copy.unavailable;
     let streaming = false;
     try {
+      if (requireAccess && Date.now() >= accessExpiresAt) {
+        failure = copy.verificationFailed;
+        status.textContent = copy.verifying;
+        if (!siteKey || accessEndpoint?.origin !== endpoint.origin) {
+          throw new Error("Visitor verification not configured");
+        }
+        const challengeToken = await getChallengeToken(challenge, siteKey, locale, controller.signal);
+        const access = await fetch(accessEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ challengeToken }),
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12_000)]),
+          credentials: "omit",
+          redirect: "error",
+          referrerPolicy: "no-referrer",
+          cache: "no-store"
+        });
+        if (!access.ok) {
+          if (access.status === 429) failure = copy.limited;
+          throw new Error("Visitor verification rejected");
+        }
+        const credential = await access.json();
+        if (typeof credential.accessToken !== "string" || !credential.accessToken
+          || !Number.isSafeInteger(credential.expiresIn) || credential.expiresIn <= 0) {
+          throw new Error("Invalid visitor credential");
+        }
+        accessToken = credential.accessToken;
+        accessExpiresAt = Date.now() + Math.max(0, credential.expiresIn * 1000 - 5000);
+        sessionId = undefined;
+        failure = copy.unavailable;
+        status.textContent = copy.waiting;
+      }
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-        body: JSON.stringify({ message: question, sessionId }),
+        body: JSON.stringify({ message: question, sessionId, accessToken }),
         signal: controller.signal,
         credentials: "omit",
         redirect: "error",
@@ -572,6 +612,12 @@ function enableChat(footer, endpoint) {
       if (!response.ok) {
         if (response.status === 429) failure = copy.limited;
         if (response.status === 404) sessionId = undefined;
+        if (requireAccess && (response.status === 401 || response.status === 403)) {
+          accessToken = undefined;
+          accessExpiresAt = 0;
+          sessionId = undefined;
+          failure = copy.verificationFailed;
+        }
         throw new Error("Chat request failed");
       }
       streaming = true;

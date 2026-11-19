@@ -662,6 +662,7 @@ body::before {
   bottom: calc(100% + 6px);
   pointer-events: none;
 }
+.chat-challenge { pointer-events: auto; }
 .chat-status {
   display: inline-block;
   padding: 2px 8px;

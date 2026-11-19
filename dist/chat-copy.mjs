@@ -10,6 +10,8 @@ export default {
     resume: "简历",
     clear: "关闭当前回答",
     waiting: "正在回答…",
+    verifying: "正在验证访客身份…",
+    verificationFailed: "访客验证未完成，请重试。",
     stopped: "已停止回答。",
     limited: "请求过多，请稍后重试。",
     unavailable: "暂时无法回答，请重试。"
@@ -25,6 +27,8 @@ export default {
     resume: "履歷",
     clear: "關閉目前回答",
     waiting: "正在回答…",
+    verifying: "正在驗證訪客身分…",
+    verificationFailed: "訪客驗證未完成，請重試。",
     stopped: "已停止回答。",
     limited: "請求過多，請稍後重試。",
     unavailable: "暫時無法回答，請重試。"
@@ -40,6 +44,8 @@ export default {
     resume: "Résumé",
     clear: "Close current answer",
     waiting: "Writing an answer…",
+    verifying: "Verifying access…",
+    verificationFailed: "Verification could not be completed. Please retry.",
     stopped: "Answer stopped.",
     limited: "Too many requests. Please try again later.",
     unavailable: "The answer could not be completed. Please retry."
@@ -55,6 +61,8 @@ export default {
     resume: "履歴書",
     clear: "現在の回答を閉じる",
     waiting: "回答を作成中…",
+    verifying: "アクセスを確認中…",
+    verificationFailed: "確認を完了できませんでした。再試行してください。",
     stopped: "回答を停止しました。",
     limited: "リクエストが集中しています。しばらくしてからお試しください。",
     unavailable: "回答を完了できませんでした。再試行してください。"

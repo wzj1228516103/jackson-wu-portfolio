@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>JacksonWu · 后端开发与 AI 应用工程</title>
   <link rel="icon" href="./jacksonwu-avatar.png" type="image/png" sizes="256x256">
-  <link rel="stylesheet" href="./style.css?v=white-chat">
+  <link rel="stylesheet" href="./style.css?v=visitor-access">
   <link rel="stylesheet" href="./site-pet.css?v=gaze">
   <script type="module" src="./site.js?v=project-stars"></script>
   <script type="module" src="./contributions.js"></script>
@@ -18,7 +18,7 @@
   <script defer src="./motion-canvas.js"></script>
   <script defer src="./gradient-ascii.js?v=wide"></script>
   <script type="module" src="./motion.js?v=live-scatter"></script>
-  <script type="module" src="./chat.js?v=live-scatter"></script>
+  <script type="module" src="./chat.js?v=visitor-access"></script>
   <script type="module" src="./essays.js?v=reader-photos"></script>
   <script type="module" src="./site-pet.js?v=gaze"></script>
 </head>
@@ -581,9 +581,11 @@
     </div>
   </main>
 
-  <footer class="chat-footer" data-chat-endpoint="https://39.105.128.249/portfolio-agent/chat/stream" hidden>
+  <footer class="chat-footer" data-chat-endpoint="https://39.105.128.249/portfolio-agent/chat/stream"
+    data-chat-access-endpoint="" data-chat-turnstile-site-key="" hidden>
     <form class="chat-entry" data-chat-entry autocomplete="off">
       <div class="chat-feedback">
+        <div id="portfolio-chat-challenge" class="chat-challenge" hidden></div>
         <p class="chat-status" role="status" data-chat-status></p>
       </div>
       <div class="chat-compose">
