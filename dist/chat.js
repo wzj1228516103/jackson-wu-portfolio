@@ -1,5 +1,5 @@
 import { locale } from "./localize.mjs";
-import translations from "./chat-copy.mjs?v=visitor-access";
+import translations from "./chat-copy.mjs?v=session-continuity";
 import { getChallengeToken } from "./chat-challenge.mjs?v=turnstile-ready";
 import { answerPreviewText, renderAnswerMarkdown } from "./answer-markdown.mjs?v=markdown-chat";
 
@@ -566,7 +566,6 @@ function enableChat(footer, endpoint) {
 
     let streamed = "";
     let failure = copy.unavailable;
-    let streaming = false;
     try {
       if (requireAccess && Date.now() >= accessExpiresAt) {
         failure = copy.verificationFailed;
@@ -575,10 +574,12 @@ function enableChat(footer, endpoint) {
           throw new Error("Visitor verification not configured");
         }
         const challengeToken = await getChallengeToken(challenge, siteKey, locale, controller.signal);
+        const challengeBody = { challengeToken };
+        if (accessToken && sessionId) Object.assign(challengeBody, { accessToken, sessionId });
         const access = await fetch(accessEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ challengeToken }),
+          body: JSON.stringify(challengeBody),
           signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12_000)]),
           credentials: "omit",
           redirect: "error",
@@ -596,7 +597,7 @@ function enableChat(footer, endpoint) {
         }
         accessToken = credential.accessToken;
         accessExpiresAt = Date.now() + Math.max(0, credential.expiresIn * 1000 - 5000);
-        sessionId = undefined;
+        if (credential.continued !== true) sessionId = undefined;
         failure = copy.unavailable;
         status.textContent = copy.waiting;
       }
@@ -611,16 +612,16 @@ function enableChat(footer, endpoint) {
       });
       if (!response.ok) {
         if (response.status === 429) failure = copy.limited;
-        if (response.status === 404) sessionId = undefined;
-        if (requireAccess && (response.status === 401 || response.status === 403)) {
-          accessToken = undefined;
-          accessExpiresAt = 0;
+        if (response.status === 404 && sessionId) {
           sessionId = undefined;
+          failure = copy.sessionExpired;
+        }
+        if (requireAccess && (response.status === 401 || response.status === 403)) {
+          accessExpiresAt = 0;
           failure = copy.verificationFailed;
         }
         throw new Error("Chat request failed");
       }
-      streaming = true;
       const result = await readEvents(response, event => {
         if (event.type === "error") {
           if (requestLimitCodes.has(event.code)) failure = copy.limited;
@@ -641,7 +642,6 @@ function enableChat(footer, endpoint) {
       if (typeof result.sessionId === "string") sessionId = result.sessionId;
       status.textContent = "";
     } catch {
-      if (streaming) sessionId = undefined;
       if (!request.dismissed) {
         retryQuestion = question;
         status.textContent = controller.signal.aborted ? copy.stopped : failure;
