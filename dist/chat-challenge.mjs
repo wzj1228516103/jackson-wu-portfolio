@@ -1,27 +1,49 @@
-const scriptUrl = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+const readyCallback = "portfolioTurnstileReady";
+const scriptUrl = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=" + readyCallback;
 
 function loadTurnstile(signal) {
-  if (window.turnstile) return Promise.resolve(window.turnstile);
+  if (typeof window.turnstile?.render === "function") return Promise.resolve(window.turnstile);
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = scriptUrl;
     script.async = true;
+    let settled = false;
 
-    function finish() {
+    function finish(turnstile, error) {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
-      signal.removeEventListener("abort", finish);
+      signal.removeEventListener("abort", abort);
+      delete window[readyCallback];
       script.onload = script.onerror = null;
-      if (!signal.aborted && window.turnstile) {
-        resolve(window.turnstile);
+      if (turnstile) {
+        resolve(turnstile);
       } else {
         script.remove();
-        reject(signal.reason ?? new Error("Visitor verification unavailable"));
+        reject(error);
       }
     }
 
-    const timer = setTimeout(finish, 10_000);
-    script.onload = script.onerror = finish;
-    signal.addEventListener("abort", finish, { once: true });
+    function ready() {
+      if (typeof window.turnstile?.render === "function") finish(window.turnstile);
+    }
+
+    function fail(message) {
+      if (settled) return;
+      console.warn("Portfolio visitor verification:", message);
+      finish(null, new Error(message));
+    }
+
+    const abort = () => finish(null, signal.reason);
+    const timer = setTimeout(() => fail("Turnstile script did not become ready."), 20_000);
+    window[readyCallback] = ready;
+    script.onload = () => {
+      const api = window.turnstile;
+      if (typeof api?.ready === "function") api.ready(ready);
+      else ready();
+    };
+    script.onerror = () => fail("Turnstile script could not load.");
+    signal.addEventListener("abort", abort, { once: true });
     document.head.append(script);
   });
 }
@@ -39,6 +61,11 @@ export async function getChallengeToken(container, sitekey, language, signal) {
   try {
     return await new Promise((resolve, reject) => {
       const fail = () => reject(new Error("Visitor verification did not complete"));
+      const widgetError = code => {
+        if (/^\d{6}$/.test(String(code))) console.warn("Portfolio visitor verification: Turnstile error " + code);
+        fail();
+        return true;
+      };
       cancel = () => reject(verification.reason);
       verification.addEventListener("abort", cancel, { once: true });
       widgetId = turnstile.render(selector, {
@@ -52,7 +79,7 @@ export async function getChallengeToken(container, sitekey, language, signal) {
         retry: "never",
         "response-field": false,
         callback: resolve,
-        "error-callback": fail,
+        "error-callback": widgetError,
         "expired-callback": fail,
         "timeout-callback": fail
       });
