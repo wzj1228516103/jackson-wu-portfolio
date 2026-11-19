@@ -3,8 +3,8 @@
   z-index: 4;
   right: max(18px, env(safe-area-inset-right));
   bottom: calc(20px + env(safe-area-inset-bottom));
-  width: clamp(76px, 7vw, 105px);
-  aspect-ratio: 1;
+  width: clamp(88px, 8vw, 116px);
+  aspect-ratio: 192 / 256;
   display: grid;
   place-items: center;
   padding: 0;
@@ -20,7 +20,9 @@
   inset: var(--pet-y) auto auto var(--pet-x);
 }
 
-.site-pet img {
+.site-pet img, .site-pet::before {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -32,12 +34,23 @@
   transition: transform 160ms ease-out;
 }
 
-.site-pet:focus-visible img { transform: translateY(-3px); }
+.site-pet.is-animated img { visibility: hidden; }
+.site-pet.is-animated::before {
+  content: "";
+  background-image: url("./jacksonwu-pet-motion.webp");
+  background-repeat: no-repeat;
+  background-size: 600% 300%;
+  background-position: calc(var(--pet-frame, 0) * 20%) calc(var(--pet-row, 0) * 50%);
+}
+.site-pet[data-pet-action="waving"] { --pet-row: 1; }
+.site-pet[data-pet-action="jumping"] { --pet-row: 2; }
+
+.site-pet:focus-visible img, .site-pet:focus-visible::before { transform: translateY(-3px); }
 .site-pet.is-dragging { cursor: grabbing; }
-.site-pet.is-dragging img { transform: scale(1.05) rotate(-5deg); }
+.site-pet.is-dragging img, .site-pet.is-dragging::before { transform: scale(1.05) rotate(-5deg); }
 
 @media (hover: hover) and (pointer: fine) {
-  .site-pet:hover:not(.is-dragging) img { transform: translateY(-4px); }
+  .site-pet:hover:not(.is-dragging) img, .site-pet:hover:not(.is-dragging)::before { transform: translateY(-4px); }
 }
 
 @media (max-width: 800px) {
@@ -48,7 +61,12 @@
   }
 }
 
+.site-pet.is-motion-paused img, .site-pet.is-motion-paused::before { transition: none; }
+.site-pet.is-motion-paused:is(:hover, :focus-visible, .is-dragging) img,
+.site-pet.is-motion-paused:is(:hover, :focus-visible, .is-dragging)::before { transform: none; }
+
 @media (prefers-reduced-motion: reduce) {
-  .site-pet img { transition: none; }
-  .site-pet:is(:hover, :focus-visible, .is-dragging) img { transform: none; }
+  .site-pet img, .site-pet::before { transition: none; }
+  .site-pet:is(:hover, :focus-visible, .is-dragging) img,
+  .site-pet:is(:hover, :focus-visible, .is-dragging)::before { transform: none; }
 }
