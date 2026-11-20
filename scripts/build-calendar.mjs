@@ -30,11 +30,15 @@ function readCalendar(html) {
   }
 
   days.sort((first, second) => first.date.localeCompare(second.date));
-  if (days.length < 365 || days.length > 367) throw new Error("Unexpected GitHub calendar length");
+  // GitHub can start at the preceding Sunday to show a complete first week.
+  if (days.length < 365 || days.length > 373) throw new Error("Unexpected GitHub calendar length");
   const start = Date.parse(days[0].date + "T00:00:00Z");
   if (!Number.isFinite(start) || days.some(({ date }, index) =>
     new Date(start + index * DAY).toISOString().slice(0, 10) !== date
   )) throw new Error("Non-contiguous GitHub calendar");
+  if (days.length > 367 && new Date(start).getUTCDay() !== 0) {
+    throw new Error("GitHub calendar does not start on a Sunday");
+  }
 
   const total = days.reduce((sum, day) => sum + day.count, 0);
   const heading = html.match(/id=["']js-contribution-activity-description["'][^>]*>\s*([\d,]+)\s+contributions?\b/i);
