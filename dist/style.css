@@ -589,6 +589,29 @@ body::before {
 .date { margin: 4px 0; color: var(--muted); font: 11px/1.5 var(--mono), var(--sans); }
 .entry-role { margin-top: 4px; color: #dccdfa; font-size: 13px; }
 .detail-link { display: inline-block; margin-top: 12px; }
+.detail-link + .engineering-link { margin-inline-start: 12px; }
+
+.engineering-page {
+  --reader-padding: var(--gutter);
+  height: auto;
+  overflow: visible;
+  background: radial-gradient(ellipse 68% 480px at 50% 0%, #1b1329 0%, var(--black) 82%);
+}
+.engineering-page::before { content: none; }
+.engineering-reader { width: 100%; }
+.engineering-reader > header { margin-block-end: 34px; }
+.engineering-back { color: var(--accent); }
+.engineering-reader nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.engineering-reader nav a { text-decoration: underline; text-underline-offset: .25em; }
+.engineering-reader nav a:hover { color: var(--accent); }
+.engineering-note {
+  padding-block: clamp(18px, 3.7vw, 32px);
+  border-block-start: 1px solid var(--line);
+  scroll-margin-block-start: 20px;
+}
+.engineering-note > h2 { color: var(--ink); font-size: clamp(24px, 3.6vw, 33px); line-height: 1.3; }
+.engineering-note h3 { margin-block-start: 1.25em; color: var(--ink); font-size: 1.02em; }
+.engineering-note :not(pre) > code { font: .87em var(--mono); color: var(--accent); }
 
 .skills > div + div { margin-top: 12px; }
 .skills dt { color: var(--ink); font-weight: 600; font-size: 13px; }

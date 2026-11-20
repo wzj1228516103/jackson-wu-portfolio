@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="JacksonWu 的技术笔记，涵盖 RAG 检索评估、SSE 断线恢复和 IoT 消息幂等。">
+  <meta name="robots" content="noindex, nofollow">
+  <title>技术笔记 · JacksonWu</title>
+  <link rel="icon" href="./jacksonwu-avatar.png" type="image/png">
+  <link rel="stylesheet" href="./style.css?v=engineering-notes">
+</head>
+<body class="engineering-page">
+  <main class="engineering-reader essay-dialog-inner">
+    <header>
+      <a class="engineering-back" href="./index.html#profile">← 返回 JacksonWu 作品集</a>
+      <h1 class="essay-dialog-title">技术笔记</h1>
+      <nav aria-label="笔记目录">
+        <a href="#rag-evaluation">RAG 检索评估</a>
+        <a href="#sse-recovery">SSE 断线恢复</a>
+        <a href="#iot-idempotency">IoT 消息幂等</a>
+      </nav>
+    </header>
+    <article class="engineering-note" id="rag-evaluation" aria-labelledby="rag-evaluation-title">
+      <h2 id="rag-evaluation-title">RAG 切分与检索评估 / RAG retrieval and citation evaluation</h2>
+      <div class="essay-dialog-body">
+        <p>调整切分时，先确定每道题需要哪些证据，再比较检索召回、模型上下文和回答引用。标题边界、片段长度和重叠范围都是候选参数。验收时看证据能否进入前三条、内容是否完整，以及引用是否支持回答里的事实。</p>
+        <p>Evaluate RAG retrieval and citations using a fixed question set and versioned sources.</p>
+        <h3>固定评测样本和来源版本 / Evaluation set and source versions</h3>
+        <p>给每道题分配样本 ID，记录问题类型、预期事实、文档版本与对应段落。保留单段直问、跨段综合和原文无答案三类样本。比较两种切分方案时，固定语料版本、检索配置和返回条数。用开发题挑参数，再用留出的题验证效果。</p>
+        <h3>逐层核对召回、上下文和引用 / Retrieval and citation checks</h3>
+        <p>先查正确证据能否进入前三条检索结果，再确认它是否完整进入模型上下文，最后逐条核对回答和引用。检索命中、上下文完整和回答有据可查是三个检查点。分开记录能帮助定位问题是出在切片、排序、截断，还是生成阶段。</p>
+        <h3>用虚构规则验证版本边界 / Synthetic acceptance example</h3>
+        <p>假设一份演示用的借阅说明在修订后把借期从 7 天改成 14 天。「现行借期几天」应引用最新版的 14 天条款。再补一道题问某种资料的借期，而文档对该类资料没有规定，预期回答是说明资料缺少依据。两题一起验收能同时检查版本匹配和无答案处理。</p>
+      </div>
+    </article>
+    <article class="engineering-note" id="sse-recovery" aria-labelledby="sse-recovery-title">
+      <h2 id="sse-recovery-title">SSE 断线重连与任务恢复 / SSE reconnect and event replay</h2>
+      <div class="essay-dialog-body">
+        <p>用 SSE 展示后台任务时，提交请求创建任务，订阅请求持续读取进度。断线恢复时核对原任务 ID、客户端最后处理的事件编号，以及服务端留存的结果。</p>
+        <h3>提交和订阅共用任务 ID / Task identity</h3>
+        <p>提交成功后返回稳定的任务 ID。客户端用原 ID 订阅流和查询任务状态，重连继续关联同一任务。服务端按任务记录进度、终态和最终结果，便于页面刷新后从状态查询恢复。</p>
+        <h3>用事件游标续接 / Reconnect and replay</h3>
+        <p>给同一任务的事件分配递增编号。客户端保存最后处理的事件编号。使用 EventSource 时，服务端可以读取重连请求的 Last-Event-ID，从已保留的事件里补送后续片段，客户端按编号去重。事件已经清理时，可请求完整状态快照，从快照对应的位置继续订阅。</p>
+        <h3>验收任务状态和最终结果 / Completion checks</h3>
+        <p>用一个虚构的报告生成任务做测试。在进度到一半时断开连接，恢复后核对任务 ID、输出顺序、重复事件和最终报告。分别模拟任务失败、终态事件丢失、游标超出保留窗口。浏览器还没拿到终态时，先查任务状态。页面收到成功状态和完整结果后，再替换临时输出并结束展示。</p>
+      </div>
+    </article>
+    <article class="engineering-note" id="iot-idempotency" aria-labelledby="iot-idempotency-title">
+      <h2 id="iot-idempotency-title">IoT 设备控制中的 MQTT 重复投递与业务幂等 / IoT command idempotency</h2>
+      <div class="essay-dialog-body">
+        <p>MQTT 的确认反映消息传输进度。设备是否执行了指令、结果是否保存，需要通过业务回执或状态查询确认。本例用一盏虚构的台灯解释重复投递、去重与失败重试。</p>
+        <h3>用设备与指令确定去重范围 / Deduplication key</h3>
+        <p>手动调光和任务重试都可能发出「把亮度设为 40%」。每次新操作分配一个指令 ID，重试沿用原 ID。若编号在设备内递增，唯一键就用「设备 ID + 指令 ID」。若换机或重置会复用编号，还要纳入能区分设备生命周期的标识。重复上报可更新最后通信时间，但同一指令的生效记录只登记一次。</p>
+        <h3>提交后确认，失败后用原键重试 / Acknowledgements and retries</h3>
+        <p>服务端用数据库唯一约束协调并发消费，把去重记录和本地业务修改放在同一事务。提交前失败时一起回滚，允许原指令重试。提交后回执丢失时，重复消息直接读取已保存结果。设备操作跨越数据库事务，接收端也要识别同一指令，或使用「设置到指定亮度」这类可安全重复的操作，并通过状态回查确认效果。</p>
+        <h3>验收副作用和最终状态 / Side-effect verification</h3>
+        <p>同时投递两份相同指令，应只生成一条生效记录。向两台设备发送相同编号，两台都应处理。分别模拟提交前失败和提交后回执丢失，重试后检查记录条数、业务结果和设备亮度。遇到乱序上报时，按设备支持的版本规则核对最终状态，防止旧报告覆盖新值。</p>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

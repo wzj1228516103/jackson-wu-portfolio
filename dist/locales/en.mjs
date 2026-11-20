@@ -1,4 +1,7 @@
 export default {
+  "阅读 SSE 断线恢复笔记 ↗": "Read the SSE recovery note ↗",
+  "阅读设备消息幂等笔记 ↗": "Read the device idempotency note ↗",
+  "阅读 RAG 检索评估笔记 ↗": "Read the RAG evaluation note ↗",
   "随记": "Notes",
   "返回随记": "Back to notes",
   "图片暂时无法加载": "Image unavailable",
