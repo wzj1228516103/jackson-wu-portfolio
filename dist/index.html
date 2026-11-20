@@ -276,10 +276,11 @@
         <section class="detail-section project-detail" id="miniprogram-skill" tabindex="-1" aria-labelledby="miniprogram-title">
           <p class="label">[ 开源工具 · 主要开发 ]</p>
           <h2 id="miniprogram-title">小程序开发工程技能套件</h2>
-          <p>为微信、支付宝和抖音小程序开发提供一套 Agent 工程流程，覆盖项目摸排、需求规格、架构设计、实现、调试、验证和上线准备。</p>
+          <p>面向微信、支付宝和抖音小程序，把需求摸排、开发验证与上线准备串成可核验的 Agent 工程流程。</p>
           <ul>
-            <li>把平台规则核对放进提审、发布和隐私申报等流程，并按平台区分自动检查和人工核对。</li>
-            <li>将项目结构、任务路由、Agent 行为和产物质量分层评测，结合证据判断是否达到验收标准。</li>
+            <li>从现有项目和平台约束出发，将需求拆成用户操作、前置条件、预期结果与异常状态，并为验收标准记录对应证据。</li>
+            <li>按平台核对提审、发布和隐私申报要求，区分自动检查与人工确认。预览、真机验证和上线验收分别记录依据。</li>
+            <li>在已合并的 PR #23 中修复 Windows 下的 Agent CLI 输出解码，显式指定 UTF-8，并用中文和表情符号样例验证。</li>
           </ul>
           <div class="intro-actions">
             <a href="https://github.com/NocodeMrLi/mini-program-engineering-skill-suite">查看 GitHub 仓库 ↗</a>
@@ -290,8 +291,12 @@
         <section class="detail-section project-detail" id="noshitjava" tabindex="-1" aria-labelledby="noshitjava-title">
           <p class="label">[ 开源工具 · Java 工程 ]</p>
           <h2 id="noshitjava-title">NoShitJava-skill</h2>
-          <p>为 AI 辅助 Java 开发提供按任务查阅的工程规则。开发、设计、审查、测试、修复、重构和查规范分别有入口。</p>
-          <p>规则覆盖接口边界、数据库事务、失败路径和测试核验，仓库提供代码示例。</p>
+          <p>将 Java 和 Spring 工程规约按任务组织，供 Agent 在设计、实现、审查和验证时加载相关规则。</p>
+          <ul>
+            <li>为开发、设计、审查、测试、修复、重构和查规范提供独立入口，覆盖 Spring 接口的入参校验、兼容性，以及 SQL、事务和幂等。</li>
+            <li>审查代码时先核对数据正确性、权限与失败路径。对发现的问题记录代码位置、触发条件、影响和最小修复建议。</li>
+            <li>订单状态修复示例展示如何用相关测试核验行为。涉及事务、并发或旧数据的修改，可针对触发条件补充回归用例。</li>
+          </ul>
           <div class="intro-actions">
             <a href="https://github.com/wzj1228516103/NoShitJava-skill">查看 NoShitJava 仓库 ↗</a>
             <a href="./noshitjava-cover.webp" target="_blank" rel="noopener">查看项目介绍大图 ↗</a>
@@ -301,8 +306,12 @@
         <section class="detail-section project-detail" id="noshitui" tabindex="-1" aria-labelledby="noshitui-title">
           <p class="label">[ 开源工具 · UI 工程 ]</p>
           <h2 id="noshitui-title">NoShitUi-skill</h2>
-          <p>帮助 Agent 根据界面需求发现、比较并集成开源组件、模板和图标。选型时核对技术栈、可访问性、许可证和维护状态。</p>
-          <p>将资源选型、界面集成和交互核验连成一套工作流程，另有独立交互展示站。</p>
+          <p>面向已有前端项目的开源 UI 资源选型与集成，帮助 Agent 根据技术栈和交互需求制定可验证的组件方案。</p>
+          <ul>
+            <li>先检查框架版本、路由、样式和依赖，再比较候选组件的主题适配、集成成本、包体积与维护情况，明确主选方案。</li>
+            <li>核对实际复用的源代码、模板和素材许可证。集成后检查不同屏幕尺寸、键盘焦点和读屏体验，并跑构建回归。</li>
+            <li>公开的订单编辑案例采用 React、shadcn/ui 和 Radix，演示如何将编辑弹窗接入已有后台并核验交互与源码来源。</li>
+          </ul>
           <div class="intro-actions">
             <a href="https://github.com/wzj1228516103/NoShitUi-skill">查看 NoShitUi 仓库 ↗</a>
             <a href="https://wzj1228516103.github.io/NoShitUi-skill/">打开交互展示站 ↗</a>
@@ -313,30 +322,33 @@
         <section class="detail-section project-detail" id="voice-pet" tabindex="-1" aria-labelledby="voice-title">
           <p class="label">[ 公司项目 · AI 应用 ]</p>
           <h2 id="voice-title">AI Agent 语音交互桌面宠物</h2>
-          <p>面向消费级智能硬件，串联本地语音唤醒、云端智能对话和设备控制。</p>
+          <p>面向消费级智能硬件，把设备端语音唤醒、云端问答和设备操作接入同一条交互链路。</p>
           <ul>
-            <li>用 LangGraph 编排意图识别、Chroma 知识检索、工具调用与回复生成，通过 Redis 管理多轮状态和请求幂等。</li>
-            <li>通过 Opus 和 WebSocket 接入流式语音，设计设备鉴权、心跳、状态上报与 OTA 链路，封装语音控制设备所需的工具。</li>
+            <li>用 LangGraph 编排意图识别、Chroma 知识检索、工具调用和回复生成，并通过 Redis 保存多轮会话状态、支持请求幂等。</li>
+            <li>通过 WebSocket 双向传输 Opus 音频流，设计设备鉴权、心跳、状态上报及 OTA 链路，并封装设备控制工具。</li>
+            <li>演示扩展方案按业务优先级、标题和正文三路召回，经加权 RRF 融合与重排，再用结构化任务计划衔接 ReAct 工具调用和设备回执核验。</li>
           </ul>
         </section>
 
         <section class="detail-section project-detail" id="support" tabindex="-1" aria-labelledby="support-title">
           <p class="label">[ 公司项目 · AI 应用 ]</p>
           <h2 id="support-title">电商智能客服</h2>
-          <p>在 Spring Boot 业务后端和 FastAPI AI 服务上提供海外电商问答、查单与售后分流。</p>
+          <p>面向海外电商场景，将商品与物流政策问答、订单状态查询和售后工单接入同一客服入口。</p>
           <ul>
-            <li>构建商品、物流和售后知识库，使用 RAG 回答咨询，借助工具查询订单，复杂问题生成工单转人工处理。</li>
-            <li>按访问 IP 匹配语言、币种和物流政策，用 RabbitMQ 衔接业务后端与 AI 服务。</li>
+            <li>以 Spring Boot 承接电商业务，FastAPI 提供 AI 服务，通过 RabbitMQ 衔接任务，并按访问来源匹配语言、币种和物流政策。</li>
+            <li>商品、物流和售后规则通过 RAG 从知识库检索，订单状态通过业务工具查询，让政策解释和实时进度各有数据来源。</li>
+            <li>需要人工判断的复杂售后问题通过工单转交客服。演示以配送延误为例，分别展示政策依据、订单工具结果和建单回执。</li>
           </ul>
         </section>
 
         <section class="detail-section project-detail" id="app-community" tabindex="-1" aria-labelledby="app-community-title">
           <p class="label">[ 公司项目 · 后端架构 ]</p>
           <h2 id="app-community-title">移动端社区与微服务升级</h2>
-          <p>为海外智能硬件用户提供宠物设备管理、内容互动和审核。负责设计和维护 300+ 个社区业务接口，并用 Apifox 管理接口文档与测试。</p>
+          <p>参与海外智能硬件社区从 0 到 1 的建设，承担需求调研、方案设计与后端开发。平台面向百万用户规模设计，目前注册用户已超过 10 万。</p>
           <ul>
-            <li>按用户、宠物、社区、支付等业务域拆分服务，以用户 ID 为核心表分片键，用 ShardingSphere 落地分库分表。</li>
-            <li>用 RabbitMQ 解耦跨服务流程，并在 Kubernetes 环境通过 Rancher、Harbor 和 CI/CD 配合发布。</li>
+            <li>负责设计和维护 300 多个社区业务 API，覆盖宠物设备管理、内容互动和审核，通过 Apifox 维护接口文档与测试。</li>
+            <li>按用户、宠物设备、社区和支付等业务域拆分服务，使用 ShardingSphere 按用户 ID 对核心数据表分片。</li>
+            <li>用 RabbitMQ 解耦跨服务流程，并配合 CI/CD、Harbor 和 Rancher 在 Kubernetes 环境发布服务。</li>
           </ul>
         </section>
 
@@ -344,10 +356,11 @@
           <p class="label">[ 个人项目 · 后端开发 ]</p>
           <h2 id="codegen-title">AI 应用开发与智能体编排平台</h2>
           <p class="date"><time datetime="2025-05">2025.05</time> — <time datetime="2026-03">2026.03</time></p>
-          <p>用 Spring AI、LangChain4j 和 LangGraph4j 整合模型调用、RAG、MCP 工具、会话记忆与 Agent 工作流。</p>
+          <p>把自然语言需求拆成可编排的开发任务，串联模型调用、知识检索、工具执行与会话记忆。</p>
           <ul>
-            <li>将需求分析、代码生成、文件操作、质量检查和构建拆成可编排节点，用 SSE 实时返回进度。</li>
-            <li>为文件工具加入路径校验、操作白名单和备份。基于平台能力实现旅游助手，支持地点查询与行程规划。</li>
+            <li>用 Spring AI、LangChain4j 和 LangGraph4j 将需求分析、代码生成、文件操作、质量检查与构建组织为工作流，通过 SSE 回传实时进度。</li>
+            <li>通过 MCP 接入工具，文件操作有路径校验、操作白名单和备份。网页生成子项目支持原型预览、源码下载与部署。</li>
+            <li>工程笔记提出沿用任务 ID 和事件游标的 SSE 断线恢复方案，并将流结束、文件落盘和预览可用性列为独立验收点。</li>
           </ul>
           <a class="detail-link" href="https://github.com/wzj1228516103/wzj-ai-code-mother">查看网页生成子项目 ↗</a>
           <a class="detail-link engineering-link" href="./engineering.html#sse-recovery">阅读 SSE 断线恢复笔记 ↗</a>
@@ -357,10 +370,11 @@
           <p class="label">[ 个人项目 · 项目负责人 / 后端开发 ]</p>
           <h2 id="iot-title">IoT 设备智能管控 Agent 平台</h2>
           <p class="date"><time datetime="2025-09">2025.09</time> — <time datetime="2026-06">2026.06</time></p>
-          <p>将语音和文字指令映射到设备动作，支持联动、实时状态监控和告警。</p>
+          <p>把语音或文字请求转换为可执行的设备指令，支持设备联动、实时状态监控与告警。</p>
           <ul>
-            <li>用 LangGraph 编排指令解析、设备校验、动作执行和结果反馈，通过 MQTT 网关下发控制指令。</li>
-            <li>用 WebSocket 推送状态，结合唯一指令 ID、Redis 去重和 MQTT QoS 处理重复投递与重试。</li>
+            <li>用 LangGraph 串联指令解析、设备校验、动作执行和结果反馈，经 MQTT 网关下发指令，通过 WebSocket 向客户端推送状态。</li>
+            <li>用唯一指令 ID 和 Redis 识别重复请求，结合 MQTT QoS 处理重复投递与重试，降低同一操作被重复执行的风险。</li>
+            <li>工程笔记将 MQTT 消息确认与设备执行结果分开，给出回执丢失时沿用原指令 ID 重试、回查设备最终状态的验收场景。</li>
           </ul>
           <a class="detail-link engineering-link" href="./engineering.html#iot-idempotency">阅读设备消息幂等笔记 ↗</a>
         </section>
@@ -369,10 +383,11 @@
           <p class="label">[ 个人项目 · 项目负责人 / 全栈开发 ]</p>
           <h2 id="rag-title">分布式 RAG 智能知识库平台</h2>
           <p class="date"><time datetime="2025-06">2025.06</time> — <time datetime="2025-09">2025.09</time></p>
-          <p>面向个人与小团队提供多格式文档导入、语义检索和带引用的多轮问答。</p>
+          <p>面向个人与小团队，将多格式文档导入、语义检索与带原文引用的多轮问答连成完整流程。</p>
           <ul>
-            <li>处理文档解析、切片与 BGE-M3 向量化，使用 Chroma 检索，通过 LangGraph 串联意图识别、答案生成和引用溯源。</li>
-            <li>以 FastAPI 提供流式推理，Spring Boot 管理用户权限与知识库，使用 Redis 缓存会话并通过 Docker 部署。</li>
+            <li>解析文档并切片，用 BGE-M3 生成向量后通过 Chroma 检索，再由 LangGraph 串联意图识别、回答生成与原文引用。</li>
+            <li>FastAPI 提供流式推理，Spring Boot 管理用户权限与知识库，Redis 缓存会话，服务通过 Docker 部署。</li>
+            <li>工程笔记给出固定评测题和文档版本的方法，分别检查证据召回、上下文完整性与引用能否支撑回答。</li>
           </ul>
           <a class="detail-link engineering-link" href="./engineering.html#rag-evaluation">阅读 RAG 检索评估笔记 ↗</a>
         </section>
@@ -380,21 +395,34 @@
         <section class="detail-section project-detail" id="knowledge-base" tabindex="-1" aria-labelledby="knowledge-base-title">
           <p class="label">[ 个人项目 · 知识工程 ]</p>
           <h2 id="knowledge-base-title">个人知识库建设</h2>
-          <p>用 Obsidian 组织项目、学习和工作资料，给笔记保留来源、适用范围和续接入口。</p>
-          <p>编写 Python 工具生成目录、检查内部链接和资料引用，再用 Git 记录与同步经过核验的更新。</p>
+          <p>用 Obsidian 组织项目、学习和工作资料，让笔记保留原始依据、适用条件和后续维护入口。</p>
+          <ul>
+            <li>把新问题与资料线索先放入收集箱，再围绕单个问题整理主题笔记。记录结论和适用条件，关联原始资料、索引与下一步。</li>
+            <li>阅读技术资料时按问题、输入、处理流程和输出梳理内容，分别记录原文依据、已复现结果与待查问题，便于回查结论。</li>
+            <li>编写 Python 工具生成目录，并检查内部链接和资料引用。通过 Git 记录已核验的更新，为后续追溯来源与变更提供依据。</li>
+          </ul>
         </section>
 
         <section class="detail-section project-detail" id="you-gym" tabindex="-1" aria-labelledby="you-gym-title">
           <p class="label">[ 个人项目 · 应用原型 ]</p>
           <h2 id="you-gym-title">YOU GYM 健身应用原型</h2>
-          <p>围绕人体探索、训练计划、饮食管理和个人中心规划首版功能。</p>
-          <p>工程分为 React Native / Expo 移动端、Spring Boot API 和 Vue 3 管理端，分别承载用户交互、后端服务和运营配置。</p>
+          <p>围绕训练计划和饮食管理设计移动端健身应用原型，规划用户体验、后端服务和运营配置的分工。</p>
+          <ul>
+            <li>以 React Native 和 Expo 搭建移动端原型，围绕人体探索、训练计划、饮食管理与个人中心规划首版功能入口。</li>
+            <li>工程划分为移动端、Spring Boot API 和 Vue 3 管理端，分别负责用户交互、业务服务与运营配置。</li>
+            <li>原型演示以虚构训练计划为例，梳理浏览、提交选择与个人中心回读的流程，并讨论运营模板和个人记录的归属。</li>
+          </ul>
         </section>
 
         <section class="detail-section project-detail" id="vision" tabindex="-1" aria-labelledby="vision-title">
           <p class="label">[ 工业视觉 ]</p>
           <h2 id="vision-title">工业缺陷智能检测与边缘推理</h2>
-          <p>参与设计基于深度学习芯片的工业质检方案，覆盖图像输入、特征处理、缺陷识别与结果输出。</p>
+          <p>参与基于深度学习芯片的工业质检方案设计，范围从图像输入延伸到边缘推理结果输出。</p>
+          <ul>
+            <li>方案覆盖质检图像输入与特征处理，明确图像数据进入芯片侧推理前需要经过的准备环节。</li>
+            <li>在方案中衔接芯片侧的缺陷识别、类别判定和结果输出，为后续质检处理提供可复核的结果。</li>
+            <li>建议验收时用固定样本回归，分别记录漏检、误报与端侧时延，并核对光照变化下的结果。</li>
+          </ul>
         </section>
                         <section class="detail-section" id="essays" tabindex="-1" aria-labelledby="essays-title">
           <p class="label">[ 随记 ]</p>
