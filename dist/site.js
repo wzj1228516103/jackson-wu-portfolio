@@ -1,4 +1,5 @@
 import { locale, t } from "./localize.mjs";
+import { setupProjectVideo } from "./project-video.mjs?v=project-video";
 
 (() => {
   const filters = document.querySelector(".filters");
@@ -64,6 +65,7 @@ import { locale, t } from "./localize.mjs";
   }
 
   addEventListener("hashchange", highlightLocation);
+  setupProjectVideo(cards, highlightLocation);
   highlightLocation();
   showProjectStars();
 })();
