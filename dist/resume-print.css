@@ -188,7 +188,7 @@ h3 {
   }
 }
 
-@page { size: A4; margin: 0; }
+@page { size: A4; margin: 10mm 13mm; }
 
 @media print {
   :root { color-scheme: light; }
@@ -198,10 +198,10 @@ h3 {
   .toolbar { display: none; }
 
   .sheet {
-    width: 210mm;
-    min-height: 297mm;
+    width: auto;
+    min-height: 0;
     margin: 0;
-    padding: 10mm 13mm;
+    padding: 0;
   }
 
   .identity { padding-block-end: 3mm; }
@@ -210,5 +210,6 @@ h3 {
   .entry + .entry { margin-block-start: 2mm; }
   h2 { margin-block-end: 1.5mm; break-after: avoid; }
 
+  .sheet .personal-projects { margin-block-start: 0; break-before: page; }
   .entry, .identity { break-inside: avoid; }
 }

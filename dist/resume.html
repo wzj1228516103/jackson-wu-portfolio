@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>JacksonWu · 个人简历</title>
   <link rel="icon" href="./jacksonwu-avatar.png" type="image/png" sizes="256x256">
-  <link rel="stylesheet" href="./resume-print.css?v=locales">
+  <link rel="stylesheet" href="./resume-print.css?v=detailed-resume">
   <script type="module" src="./resume-print.js"></script>
 </head>
 <body>
@@ -41,6 +41,10 @@
           <p class="date">主要开发</p>
         </div>
         <p>面向微信、支付宝和抖音小程序的 Agent 技能套件，将需求澄清、平台适配、分层验证和发布检查整理成可执行的开发流程。</p>
+        <ul>
+          <li>将项目结构、任务路由、Agent 行为和产物质量分层评测，结合证据判断是否达到验收标准。</li>
+          <li>修复 Windows 上 Agent CLI 输出的编码兼容问题，显式使用 UTF-8 解码，并补充覆盖中文和表情符号的回归测试。 <a href="https://github.com/NocodeMrLi/mini-program-engineering-skill-suite/pull/23">PR #23</a></li>
+        </ul>
         <p class="entry-link"><a href="https://github.com/NocodeMrLi/mini-program-engineering-skill-suite">github.com/NocodeMrLi/mini-program-engineering-skill-suite</a></p>
         <p class="entry-link related-projects">
           <span>其他开源项目</span>
@@ -59,9 +63,10 @@
         </div>
         <p class="context">Java 开发工程师</p>
         <ul>
-          <li><strong>语音交互桌面宠物：</strong> 用 LangGraph 串联意图识别、RAG 检索与设备工具调用，通过 WebSocket 和 Opus 接入流式语音。</li>
-          <li><strong>电商智能客服：</strong> 用 Spring Boot 和 FastAPI 接入知识库问答与订单查询，将复杂咨询转为人工工单。</li>
-          <li><strong>移动端社区：</strong> 设计和维护 300+ 个社区业务接口，使用 ShardingSphere 按用户 ID 对核心表分片，并用 RabbitMQ 解耦跨服务流程。</li>
+          <li><strong>语音交互桌面宠物：</strong> 用 LangGraph 编排意图识别、Chroma 检索、设备工具调用和回复生成。通过 WebSocket 和 Opus 传输流式语音，用 Redis 管理多轮状态和请求幂等。</li>
+          <li><strong>电商智能客服：</strong> 在 Spring Boot 与 FastAPI 之间用 RabbitMQ 衔接业务和 AI 服务。用 RAG 回答商品、物流和售后问题，调用订单工具查单，将复杂咨询转为人工工单。</li>
+          <li><strong>移动端社区：</strong> 设计和维护 300+ 个社区业务接口，覆盖设备管理、内容互动和审核。用 Apifox 管理接口文档与测试。</li>
+          <li>按用户、宠物、社区和支付等业务域拆分服务，使用 ShardingSphere 按用户 ID 对核心表分片，并在 Kubernetes 环境配合 CI/CD 发布。</li>
           <li>用 Nacos 与 Sentinel 治理移动端微服务。为多租户后台实现 RBAC、租户拦截与动态数据源。</li>
         </ul>
       </article>
@@ -73,11 +78,12 @@
         <p class="context">Java 开发工程师 · 数字孪生智慧大屏</p>
         <ul>
           <li>为数字孪生大屏实现 OAuth 2.0 / JWT 统一认证，整合设备轨迹、OCR、扫码与 BOM 导入导出，支持生产追溯。</li>
+          <li>调整数据库索引，将关键写入改为异步处理，并通过缓存预热减轻数据库压力。</li>
         </ul>
       </article>
     </section>
 
-    <section aria-labelledby="projects-heading">
+    <section class="personal-projects" aria-labelledby="projects-heading">
       <h2 id="projects-heading">个人项目</h2>
       <article class="entry">
         <div class="entry-head">
@@ -85,24 +91,35 @@
           <p class="date"><time datetime="2025-05">2025.05</time> - <time datetime="2026-03">2026.03</time></p>
         </div>
         <p>负责后端与 Agent 编排，将需求分析、代码生成、质量检查和构建拆成工作流节点，通过 SSE 返回执行进度。</p>
+        <ul>
+          <li>用 Spring AI、LangChain4j 和 LangGraph4j 整合模型调用、RAG、MCP 工具、会话记忆与 Agent 工作流。</li>
+          <li>为文件工具加入路径校验、操作白名单和备份。基于平台能力实现旅游助手，支持地点查询与行程规划。</li>
+        </ul>
       </article>
       <article class="entry">
         <div class="entry-head">
           <h3>IoT 设备智能管控 Agent 平台</h3>
           <p class="date"><time datetime="2025-09">2025.09</time> - <time datetime="2026-06">2026.06</time></p>
         </div>
-        <p>负责项目和后端开发，将语音与文字指令转为 MQTT 设备动作，并用唯一指令 ID 与 Redis 处理重复投递和重试。</p>
+        <p>担任项目负责人并负责后端开发，用 LangGraph 串联指令解析、设备校验、动作执行与结果反馈，通过 MQTT 网关下发指令。</p>
+        <ul>
+          <li>用 WebSocket 推送状态，结合唯一指令 ID、Redis 去重和 MQTT QoS 处理重复投递与重试。</li>
+        </ul>
       </article>
       <article class="entry">
         <div class="entry-head">
           <h3>分布式 RAG 智能知识库平台</h3>
           <p class="date"><time datetime="2025-06">2025.06</time> - <time datetime="2025-09">2025.09</time></p>
         </div>
-        <p>负责项目和全栈开发，搭建文档解析、切片与向量检索链路，让多轮问答能引用原文。</p>
+        <p>担任项目负责人并负责全栈开发，支持多格式文档导入、语义检索和带原文引用的多轮问答。</p>
+        <ul>
+          <li>处理文档解析、切片与 BGE-M3 向量化，使用 Chroma 检索，通过 LangGraph 串联意图识别、答案生成和引用溯源。</li>
+          <li>以 FastAPI 提供流式推理，Spring Boot 管理用户权限与知识库，使用 Redis 缓存会话并通过 Docker 部署。</li>
+        </ul>
       </article>
       <article class="entry">
         <h3>工业缺陷智能检测与边缘推理</h3>
-        <p>参与设计基于深度学习芯片的工业缺陷识别与分类方案。</p>
+        <p>参与设计基于深度学习芯片的工业质检方案，覆盖图像输入、特征处理、缺陷识别与结果输出。</p>
       </article>
     </section>
 
