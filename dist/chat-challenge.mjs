@@ -1,4 +1,5 @@
 const scriptUrl = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+const retryableChallengeErrors = new Set(["110600", "200500"]);
 let scriptAttempt = 0;
 let turnstileLoad;
 
@@ -64,40 +65,75 @@ export async function getChallengeToken(container, sitekey, language, signal) {
   const turnstile = await waitForTurnstile(signal);
   signal.throwIfAborted();
 
-  const verification = AbortSignal.any([signal, AbortSignal.timeout(90_000)]);
   const selector = "#" + container.id;
+  let deadline;
   let cancel;
   let widgetId;
   container.hidden = false;
   try {
     return await new Promise((resolve, reject) => {
-      const fail = () => reject(new Error("Visitor verification did not complete"));
+      let retried = false;
+      let interactive = false;
+
+      function schedule(delay, callback) {
+        clearTimeout(deadline);
+        deadline = setTimeout(callback, delay);
+      }
+
+      function fail(message) {
+        console.warn("Portfolio visitor verification:", message);
+        reject(new Error(message));
+      }
+
+      function retryBackgroundCheck() {
+        if (retried || interactive || !widgetId) {
+          fail("Turnstile challenge timed out.");
+          return;
+        }
+        retried = true;
+        schedule(30_000, retryBackgroundCheck);
+        try {
+          turnstile.reset(widgetId);
+        } catch (error) {
+          reject(error);
+        }
+      }
+
       const widgetError = code => {
-        if (/^\d{6}$/.test(String(code))) console.warn("Portfolio visitor verification: Turnstile error " + code);
-        fail();
+        const errorCode = String(code);
+        if (!retried && !interactive && retryableChallengeErrors.has(errorCode)) {
+          schedule(1500, retryBackgroundCheck);
+        } else {
+          fail(/^\d{6}$/.test(errorCode) ? "Turnstile error " + errorCode : "Turnstile challenge failed.");
+        }
         return true;
       };
-      cancel = () => reject(verification.reason);
-      verification.addEventListener("abort", cancel, { once: true });
+      cancel = () => reject(signal.reason);
+      signal.addEventListener("abort", cancel, { once: true });
+      schedule(30_000, retryBackgroundCheck);
       widgetId = turnstile.render(selector, {
         sitekey,
         language: language.toLowerCase(),
         action: "portfolio_chat",
-        execution: "execute",
-        appearance: "interaction-only",
+        appearance: "execute",
         size: container.parentElement.clientWidth < 300 ? "compact" : "normal",
         theme: "dark",
         retry: "never",
         "response-field": false,
         callback: resolve,
+        "before-interactive-callback": () => {
+          interactive = true;
+          schedule(90_000, () => fail("Turnstile interactive challenge timed out."));
+        },
         "error-callback": widgetError,
-        "expired-callback": fail,
-        "timeout-callback": fail
+        "expired-callback": () => fail("Turnstile challenge expired."),
+        "timeout-callback": () => fail("Turnstile interactive challenge timed out."),
+        "unsupported-callback": () => fail("Turnstile does not support this browser.")
       });
-      turnstile.execute(selector);
     });
   } finally {
-    verification.removeEventListener("abort", cancel);
+    clearTimeout(deadline);
+    signal.removeEventListener("abort", cancel);
     container.hidden = true;
     if (widgetId) turnstile.remove(widgetId);
   }

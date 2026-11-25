@@ -1,6 +1,6 @@
 import { locale } from "./localize.mjs";
 import translations from "./chat-copy.mjs?v=visitor-verification";
-import { getChallengeToken } from "./chat-challenge.mjs?v=visitor-verification";
+import { getChallengeToken } from "./chat-challenge.mjs?v=verification-retry";
 import { answerPreviewText, renderAnswerMarkdown } from "./answer-markdown.mjs?v=markdown-chat";
 
 const copy = translations[locale] ?? translations["zh-CN"];
