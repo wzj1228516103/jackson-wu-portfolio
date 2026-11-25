@@ -1,6 +1,6 @@
 import { locale } from "./localize.mjs";
-import translations from "./chat-copy.mjs?v=session-continuity";
-import { getChallengeToken } from "./chat-challenge.mjs?v=turnstile-ready";
+import translations from "./chat-copy.mjs?v=visitor-verification";
+import { getChallengeToken } from "./chat-challenge.mjs?v=visitor-verification";
 import { answerPreviewText, renderAnswerMarkdown } from "./answer-markdown.mjs?v=markdown-chat";
 
 const copy = translations[locale] ?? translations["zh-CN"];
@@ -528,6 +528,7 @@ function enableChat(footer, endpoint) {
   const compact = matchMedia("(max-width: 800px)");
   let accessToken;
   let accessExpiresAt = 0;
+  let verificationCoolingDown = false;
   let sessionId;
   let activeRequest;
   let retryQuestion;
@@ -548,10 +549,22 @@ function enableChat(footer, endpoint) {
 
   function syncActions() {
     const busy = Boolean(activeRequest);
-    send.disabled = busy || !input.value.trim();
+    send.disabled = busy || verificationCoolingDown || !input.value.trim();
     send.hidden = busy;
     stop.hidden = !busy;
     retry.hidden = busy || !retryQuestion || Boolean(input.value.trim());
+    retry.disabled = verificationCoolingDown;
+  }
+
+  function waitBeforeVerificationRetry(response) {
+    // The cross-origin gateway may not expose Retry-After. Its access rate limit uses a one-minute window.
+    const seconds = Number(response.headers.get("Retry-After"));
+    const delay = Number.isSafeInteger(seconds) && seconds > 0 && seconds <= 60 ? seconds * 1000 : 60_000;
+    verificationCoolingDown = true;
+    setTimeout(() => {
+      verificationCoolingDown = false;
+      syncActions();
+    }, delay);
   }
 
   async function answerQuestion(question) {
@@ -568,12 +581,14 @@ function enableChat(footer, endpoint) {
     let failure = copy.unavailable;
     try {
       if (requireAccess && Date.now() >= accessExpiresAt) {
-        failure = copy.verificationFailed;
+        failure = copy.verificationUnavailable;
         status.textContent = copy.verifying;
         if (!siteKey || accessEndpoint?.origin !== endpoint.origin) {
           throw new Error("Visitor verification not configured");
         }
+        failure = copy.verificationFailed;
         const challengeToken = await getChallengeToken(challenge, siteKey, locale, controller.signal);
+        failure = copy.verificationUnavailable;
         const challengeBody = { challengeToken };
         if (accessToken && sessionId) Object.assign(challengeBody, { accessToken, sessionId });
         const access = await fetch(accessEndpoint, {
@@ -587,7 +602,11 @@ function enableChat(footer, endpoint) {
           cache: "no-store"
         });
         if (!access.ok) {
-          if (access.status === 429) failure = copy.limited;
+          if (access.status === 429) {
+            failure = copy.verificationLimited;
+            waitBeforeVerificationRetry(access);
+          }
+          if (access.status === 400 || access.status === 403) failure = copy.verificationRejected;
           throw new Error("Visitor verification rejected");
         }
         const credential = await access.json();
@@ -618,7 +637,7 @@ function enableChat(footer, endpoint) {
         }
         if (requireAccess && (response.status === 401 || response.status === 403)) {
           accessExpiresAt = 0;
-          failure = copy.verificationFailed;
+          failure = copy.verificationRejected;
         }
         throw new Error("Chat request failed");
       }
@@ -676,7 +695,7 @@ function enableChat(footer, endpoint) {
   form.addEventListener("submit", event => {
     event.preventDefault();
     const question = input.value.trim();
-    if (activeRequest || !question || question.length > input.maxLength) return;
+    if (activeRequest || verificationCoolingDown || !question || question.length > input.maxLength) return;
     input.value = "";
     if (compact.matches) input.blur();
     answerQuestion(question);
@@ -686,7 +705,7 @@ function enableChat(footer, endpoint) {
     activeRequest?.controller.abort();
   });
   retry.addEventListener("click", event => {
-    if (activeRequest || !retryQuestion) return;
+    if (activeRequest || verificationCoolingDown || !retryQuestion) return;
     if (event.detail === 0) input.focus({ preventScroll: true });
     answerQuestion(retryQuestion);
   });
