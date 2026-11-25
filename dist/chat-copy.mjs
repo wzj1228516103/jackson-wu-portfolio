@@ -15,9 +15,11 @@ export default {
     verificationRejected: "访客凭证无效或已过期，请重新验证。",
     verificationUnavailable: "访客验证服务暂时不可用，请稍后重试。",
     verificationLimited: "访客验证请求过多，请稍后重试。",
+    retryCountdown: "{seconds} 秒后可重试",
     sessionExpired: "这次对话已过期，重试会开始新对话。",
     stopped: "已停止回答。",
-    limited: "请求过多，请稍后重试。",
+    limited: "聊天请求过多，请稍后重试。",
+    dailyLimit: "今天的 AI 问答额度已用完，请稍后再来。",
     unavailable: "暂时无法回答，请重试。"
   },
   "zh-TW": {
@@ -36,9 +38,11 @@ export default {
     verificationRejected: "訪客憑證無效或已過期，請重新驗證。",
     verificationUnavailable: "訪客驗證服務暫時無法使用，請稍後重試。",
     verificationLimited: "訪客驗證請求過多，請稍後重試。",
+    retryCountdown: "{seconds} 秒後可重試",
     sessionExpired: "這次對話已逾時，重試會開始新的對話。",
     stopped: "已停止回答。",
-    limited: "請求過多，請稍後重試。",
+    limited: "聊天請求過多，請稍後重試。",
+    dailyLimit: "今天的 AI 問答額度已用完，請稍後再來。",
     unavailable: "暫時無法回答，請重試。"
   },
   en: {
@@ -57,9 +61,11 @@ export default {
     verificationRejected: "Your verification is invalid or expired. Please verify again.",
     verificationUnavailable: "Visitor verification is temporarily unavailable. Please try again later.",
     verificationLimited: "Too many verification attempts. Please try again shortly.",
+    retryCountdown: "Retry in {seconds} s",
     sessionExpired: "This conversation has expired. Retry to start a new one.",
     stopped: "Answer stopped.",
-    limited: "Too many requests. Please try again later.",
+    limited: "Too many chat requests. Please try again later.",
+    dailyLimit: "Today's AI answer allowance has been used. Please check back later.",
     unavailable: "The answer could not be completed. Please retry."
   },
   ja: {
@@ -78,9 +84,11 @@ export default {
     verificationRejected: "アクセス確認が無効か、期限切れです。再度確認してください。",
     verificationUnavailable: "アクセス確認サービスを一時的に利用できません。しばらくしてからお試しください。",
     verificationLimited: "アクセス確認の試行回数が上限に達しました。しばらくしてからお試しください。",
+    retryCountdown: "再試行まで {seconds} 秒",
     sessionExpired: "会話の有効期限が切れました。再試行すると新しい会話が始まります。",
     stopped: "回答を停止しました。",
-    limited: "リクエストが集中しています。しばらくしてからお試しください。",
+    limited: "チャットのリクエストが集中しています。しばらくしてからお試しください。",
+    dailyLimit: "本日の AI 回答は上限に達しました。時間をおいて再度お試しください。",
     unavailable: "回答を完了できませんでした。再試行してください。"
   }
 };

@@ -1,10 +1,13 @@
 import { locale } from "./localize.mjs";
-import translations from "./chat-copy.mjs?v=visitor-verification";
+import translations from "./chat-copy.mjs?v=retry-countdown";
 import { getChallengeToken } from "./chat-challenge.mjs?v=verification-retry";
 import { answerPreviewText, renderAnswerMarkdown } from "./answer-markdown.mjs?v=markdown-chat";
 
 const copy = translations[locale] ?? translations["zh-CN"];
-const requestLimitCodes = new Set(["rate_limited", "daily_limit", "busy"]);
+const requestLimitCodes = new Set(["rate_limited", "busy"]);
+const rateWindowMs = 60_000;
+const verificationRequestsPerWindow = 4;
+const verificationRetryDelayMs = 4000;
 const answerIdleMs = 60_000;
 const answerDissolveMs = 4200;
 
@@ -20,6 +23,12 @@ function configuredEndpoint(value = "") {
     return null;
   }
   return null;
+}
+
+function retryDelay(response, fallbackMs) {
+  const seconds = Number(response.headers.get("Retry-After"));
+  return Number.isSafeInteger(seconds) && seconds > 0 && seconds <= rateWindowMs / 1000
+    ? seconds * 1000 : fallbackMs;
 }
 
 async function readEvents(response, handleEvent) {
@@ -520,6 +529,7 @@ function enableChat(footer, endpoint) {
   const retry = form.querySelector("[data-chat-retry]");
   const clear = form.querySelector("[data-chat-clear]");
   const status = form.querySelector("[data-chat-status]");
+  const countdown = form.querySelector("[data-chat-countdown]");
   const challenge = form.querySelector("#portfolio-chat-challenge");
   const siteKey = footer.dataset.chatTurnstileSiteKey?.trim();
   const accessUrl = footer.dataset.chatAccessEndpoint?.trim();
@@ -528,7 +538,9 @@ function enableChat(footer, endpoint) {
   const compact = matchMedia("(max-width: 800px)");
   let accessToken;
   let accessExpiresAt = 0;
-  let verificationCoolingDown = false;
+  let verificationAttempts = [];
+  let retryAt = 0;
+  let countdownTimer;
   let sessionId;
   let activeRequest;
   let retryQuestion;
@@ -549,22 +561,35 @@ function enableChat(footer, endpoint) {
 
   function syncActions() {
     const busy = Boolean(activeRequest);
-    send.disabled = busy || verificationCoolingDown || !input.value.trim();
+    const coolingDown = Date.now() < retryAt;
+    send.disabled = busy || coolingDown || !input.value.trim();
     send.hidden = busy;
     stop.hidden = !busy;
     retry.hidden = busy || !retryQuestion || Boolean(input.value.trim());
-    retry.disabled = verificationCoolingDown;
+    retry.disabled = coolingDown;
   }
 
-  function waitBeforeVerificationRetry(response) {
-    // The cross-origin gateway may not expose Retry-After. Its access rate limit uses a one-minute window.
-    const seconds = Number(response.headers.get("Retry-After"));
-    const delay = Number.isSafeInteger(seconds) && seconds > 0 && seconds <= 60 ? seconds * 1000 : 60_000;
-    verificationCoolingDown = true;
-    setTimeout(() => {
-      verificationCoolingDown = false;
-      syncActions();
-    }, delay);
+  function updateCountdown() {
+    const remaining = retryAt - Date.now();
+    if (countdown) {
+      countdown.textContent = remaining > 0
+        ? copy.retryCountdown.replace("{seconds}", Math.ceil(remaining / 1000)) : "";
+    }
+    syncActions();
+    if (remaining > 0) countdownTimer = setTimeout(updateCountdown, Math.min(1000, remaining));
+  }
+
+  function pauseUntil(timestamp) {
+    if (timestamp <= retryAt || timestamp <= Date.now()) return;
+    retryAt = timestamp;
+    clearTimeout(countdownTimer);
+    updateCountdown();
+  }
+
+  function recordVerificationAttempt() {
+    const now = Date.now();
+    verificationAttempts = verificationAttempts.filter(at => now - at < rateWindowMs);
+    verificationAttempts.push(now);
   }
 
   async function answerQuestion(question) {
@@ -600,12 +625,18 @@ function enableChat(footer, endpoint) {
           redirect: "error",
           referrerPolicy: "no-referrer",
           cache: "no-store"
-        });
+        }).catch(error => {
+          if (!controller.signal.aborted) pauseUntil(Date.now() + verificationRetryDelayMs);
+          throw error;
+        }).finally(recordVerificationAttempt);
         if (!access.ok) {
           if (access.status === 429) {
             failure = copy.verificationLimited;
-            waitBeforeVerificationRetry(access);
+            verificationAttempts = [];
+            // The rate window also covers gateways that don't expose Retry-After to the browser.
+            pauseUntil(Date.now() + retryDelay(access, rateWindowMs));
           }
+          if (access.status >= 500) pauseUntil(Date.now() + retryDelay(access, verificationRetryDelayMs));
           if (access.status === 400 || access.status === 403) failure = copy.verificationRejected;
           throw new Error("Visitor verification rejected");
         }
@@ -630,7 +661,15 @@ function enableChat(footer, endpoint) {
         referrerPolicy: "no-referrer"
       });
       if (!response.ok) {
-        if (response.status === 429) failure = copy.limited;
+        if (response.status === 429) {
+          const result = await response.json().catch(() => null);
+          if (result?.error?.code === "daily_limit") {
+            failure = copy.dailyLimit;
+          } else {
+            failure = copy.limited;
+            pauseUntil(Date.now() + retryDelay(response, rateWindowMs));
+          }
+        }
         if (response.status === 404 && sessionId) {
           sessionId = undefined;
           failure = copy.sessionExpired;
@@ -643,6 +682,7 @@ function enableChat(footer, endpoint) {
       }
       const result = await readEvents(response, event => {
         if (event.type === "error") {
+          if (event.code === "daily_limit") failure = copy.dailyLimit;
           if (requestLimitCodes.has(event.code)) failure = copy.limited;
           throw new Error("Chat stream failed");
         }
@@ -661,6 +701,9 @@ function enableChat(footer, endpoint) {
       if (typeof result.sessionId === "string") sessionId = result.sessionId;
       status.textContent = "";
     } catch {
+      if (requireAccess && Date.now() >= accessExpiresAt && verificationAttempts.length >= verificationRequestsPerWindow) {
+        pauseUntil(verificationAttempts[0] + rateWindowMs);
+      }
       if (!request.dismissed) {
         retryQuestion = question;
         status.textContent = controller.signal.aborted ? copy.stopped : failure;
@@ -695,7 +738,7 @@ function enableChat(footer, endpoint) {
   form.addEventListener("submit", event => {
     event.preventDefault();
     const question = input.value.trim();
-    if (activeRequest || verificationCoolingDown || !question || question.length > input.maxLength) return;
+    if (activeRequest || Date.now() < retryAt || !question || question.length > input.maxLength) return;
     input.value = "";
     if (compact.matches) input.blur();
     answerQuestion(question);
@@ -705,7 +748,7 @@ function enableChat(footer, endpoint) {
     activeRequest?.controller.abort();
   });
   retry.addEventListener("click", event => {
-    if (activeRequest || verificationCoolingDown || !retryQuestion) return;
+    if (activeRequest || Date.now() < retryAt || !retryQuestion) return;
     if (event.detail === 0) input.focus({ preventScroll: true });
     answerQuestion(retryQuestion);
   });
