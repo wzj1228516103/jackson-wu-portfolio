@@ -1,5 +1,5 @@
 import { locale } from "./localize.mjs";
-import translations from "./chat-copy.mjs?v=retry-countdown";
+import translations from "./chat-copy.mjs?v=follow-up-questions";
 import { getChallengeToken } from "./chat-challenge.mjs?v=verification-retry";
 import { answerPreviewText, renderAnswerMarkdown } from "./answer-markdown.mjs?v=markdown-chat";
 
@@ -29,6 +29,14 @@ function retryDelay(response, fallbackMs) {
   const seconds = Number(response.headers.get("Retry-After"));
   return Number.isSafeInteger(seconds) && seconds > 0 && seconds <= rateWindowMs / 1000
     ? seconds * 1000 : fallbackMs;
+}
+
+function suggestedQuestions(question) {
+  const normalize = text => text.trim().replace(/[？?。.!！]+$/u, "").toLocaleLowerCase(locale);
+  const asked = normalize(question);
+  const questions = copy.followUpQuestions;
+  const index = questions.findIndex(candidate => normalize(candidate) === asked);
+  return [...questions.slice(index + 1), ...questions.slice(0, Math.max(index, 0))].slice(0, 3);
 }
 
 async function readEvents(response, handleEvent) {
@@ -229,7 +237,7 @@ function createSettledEffects({ output, revealed, finished, reduced, segment, ca
     noteInteraction();
     const particles = window.portfolioParticles;
     if (event.pointerType !== "mouse" || event.buttons || reduced.matches || hasSelection() ||
-        readingWithKeyboard() || (event.target instanceof Element && event.target.closest("a")) ||
+        readingWithKeyboard() || (event.target instanceof Element && event.target.closest("a, button")) ||
         !particles?.scatterGlyphs ||
         performance.now() - lastScan < 24) return;
     lastScan = performance.now();
@@ -302,12 +310,13 @@ function createSettledEffects({ output, revealed, finished, reduced, segment, ca
   };
 }
 
-function createAnswerOutput(canIdle, onIdle) {
+function createAnswerOutput(canIdle, onIdle, onFollowUp) {
   const output = document.querySelector("[data-chat-answer-output]");
   const draft = output.querySelector("[data-chat-draft]");
   const revealed = output.querySelector("[data-chat-revealed]");
   const frontier = output.querySelector("[data-chat-frontier]");
   const finished = output.querySelector("[data-chat-markdown]");
+  const followUps = output.querySelector("[data-chat-follow-ups]");
   const announcement = document.querySelector("[data-chat-announcement]");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const segmenter = typeof Intl.Segmenter === "function"
@@ -324,6 +333,7 @@ function createAnswerOutput(canIdle, onIdle) {
   let preview = "";
   let completed = "";
   let finalSource = "";
+  let nextQuestions = [];
   const segment = text => segmenter
     ? Array.from(segmenter.segment(text), ({ segment }) => segment)
     : text.match(/\p{Regional_Indicator}{2}|\P{M}\p{M}*\p{Emoji_Modifier}?(?:\u200D\P{M}\p{M}*\p{Emoji_Modifier}?)*\u200D?|\p{M}+/gu) ?? [];
@@ -371,6 +381,11 @@ function createAnswerOutput(canIdle, onIdle) {
     revealed.replaceChildren();
     finished.replaceChildren();
     finished.hidden = true;
+    nextQuestions = [];
+    if (followUps) {
+      followUps.hidden = true;
+      followUps.replaceChildren();
+    }
     draft.hidden = false;
     announcement.textContent = "";
     output.scrollTop = 0;
@@ -381,6 +396,24 @@ function createAnswerOutput(canIdle, onIdle) {
     document.body.dataset.answerActive = "";
     output.hidden = false;
     window.portfolioParticles?.beginAnswer?.();
+  }
+
+  function showFollowUps() {
+    if (!followUps || !nextQuestions.length) return;
+    const label = document.createElement("p");
+    label.className = "chat-follow-ups-label";
+    label.id = "chat-follow-ups-label";
+    label.textContent = copy.followUpLabel;
+    const buttons = nextQuestions.map(question => {
+      const button = document.createElement("button");
+      button.className = "chat-follow-up";
+      button.type = "button";
+      button.textContent = question;
+      button.addEventListener("click", event => onFollowUp(question, event));
+      return button;
+    });
+    followUps.replaceChildren(label, ...buttons);
+    followUps.hidden = false;
   }
 
   function settleMarkdown() {
@@ -397,6 +430,7 @@ function createAnswerOutput(canIdle, onIdle) {
       finished.hidden = false;
       draft.hidden = true;
       effects.settle();
+      showFollowUps();
       revealed.replaceChildren();
       completed = "";
     });
@@ -510,9 +544,10 @@ function createAnswerOutput(canIdle, onIdle) {
   return {
     get visible() { return !output.hidden; },
     update,
-    finish(source) {
+    finish(source, questions = []) {
       update(source);
       finalSource = source;
+      nextQuestions = questions;
       ended = true;
       flushTail();
     },
@@ -546,7 +581,12 @@ function enableChat(footer, endpoint) {
   let retryQuestion;
   const answer = createAnswerOutput(
     () => !activeRequest && !input.value,
-    () => { clear.hidden = true; }
+    () => { clear.hidden = true; },
+    (question, event) => {
+      if (activeRequest || Date.now() < retryAt) return;
+      if (event.detail === 0) input.focus({ preventScroll: true });
+      answerQuestion(question);
+    }
   );
 
   for (const element of footer.querySelectorAll("[data-chat-copy]")) {
@@ -695,7 +735,7 @@ function enableChat(footer, endpoint) {
       if (controller.signal.aborted) throw new Error("Chat request stopped");
       const final = typeof result.text === "string" && result.text.trim() ? result.text : streamed;
       if (!final.trim()) throw new Error("Empty answer");
-      answer.finish(final);
+      answer.finish(final, suggestedQuestions(question));
       clear.hidden = !answer.visible;
 
       if (typeof result.sessionId === "string") sessionId = result.sessionId;
